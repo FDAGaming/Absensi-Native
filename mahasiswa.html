@@ -171,7 +171,7 @@
             // Cek apakah yang login benar-benar role mahasiswa
             if (localStorage.getItem("user_role") !== "mahasiswa") {
                 alert("Akses Ditolak! Harap login sebagai Mahasiswa terlebih dahulu.");
-                window.location.href = "login.html"; // Redirect ke halaman login
+                window.location.href = "index.html"; // Redirect ke halaman login
                 return;
             }
             
@@ -205,7 +205,7 @@
         function logout() {
             if (confirm("Apakah Anda yakin ingin keluar dari akun ini?")) {
                 localStorage.clear();
-                window.location.href = "login.html";
+                window.location.href = "index.html";
             }
         }
 

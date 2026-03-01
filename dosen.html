@@ -161,7 +161,7 @@
             // Validasi: Hanya dosen dan admin yang boleh mengakses halaman ini
             if (role !== "dosen" && role !== "admin") {
                 alert("Akses Ditolak! Harap login sebagai Dosen terlebih dahulu.");
-                window.location.href = "login.html"; 
+                window.location.href = "index.html"; 
                 return;
             }
             
@@ -279,7 +279,7 @@
         function logout() { 
             if (confirm("Apakah Anda yakin ingin keluar dari panel Dosen? Sesi presensi yang sedang berjalan di layar akan terhenti.")) {
                 localStorage.clear(); 
-                window.location.href = "login.html"; 
+                window.location.href = "index.html"; 
             }
         }
                 // --- FUNGSI RESPONSIVE SIDEBAR ---

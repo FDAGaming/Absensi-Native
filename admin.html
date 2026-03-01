@@ -198,7 +198,7 @@
             // Mengecek apakah user memiliki role 'admin' di memori perangkat
             if (localStorage.getItem("user_role") !== "admin") {
                 alert("Akses Ditolak! Harap login sebagai Admin terlebih dahulu.");
-                window.location.href = "login.html"; // Pastikan nama file login Anda sesuai
+                window.location.href = "index.html"; // Pastikan nama file login Anda sesuai
                 return;
             }
             loadUsers(); 
@@ -228,7 +228,7 @@
         function logout() {
             // Membersihkan seluruh sesi dan data kredensial
             localStorage.clear();
-            window.location.href = "login.html";
+            window.location.href = "index.html";
         }
 
         // --- MODUL 1: USER MANAGEMENT ---
