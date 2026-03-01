@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Presensi Cloud</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-body: #f1f5f9; --bg-sidebar: #0f172a; --bg-panel: #ffffff; --primary: #3b82f6; --text-main: #334155; --border: #e2e8f0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { display: flex; height: 100vh; background-color: var(--bg-body); color: var(--text-main); }
+        
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--bg-sidebar); color: #f8fafc; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 24px; border-bottom: 1px solid #1e293b; }
+        .sidebar-menu { padding: 12px; flex: 1; }
+        .sidebar button { width: 100%; padding: 12px 16px; margin-bottom: 8px; text-align: left; background: transparent; color: #cbd5e1; border: none; cursor: pointer; border-radius: 8px; font-weight: 500; transition: 0.2s; }
+        .sidebar button:hover, .sidebar button.active { background: #1e293b; color: white; }
+        .sidebar-footer { padding: 20px; border-top: 1px solid #1e293b; }
+        .btn-logout { color: #fca5a5 !important; }
+        
+        /* Content & Panels */
+        .content { flex: 1; padding: 30px 40px; overflow-y: auto; }
+        .panel { background: var(--bg-panel); padding: 24px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        h3 { font-size: 1.15rem; color: #0f172a; }
+        
+        /* Forms & Tables */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.85rem; font-weight: 500; }
+        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; background: var(--primary); color: white; }
+        .btn-sm { padding: 6px 10px; font-size: 0.8rem; background: #64748b; }
+        .btn-danger { background: #ef4444; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: #f8fafc; font-weight: 600; }
+        
+        /* Utils */
+        .hidden { display: none !important; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 15px 20px; border-radius: 8px; color: white; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
+        .toast-success { background: #10b981; }
+        .toast-error { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Panel Admin</h2>
+        </div>
+        <div class="sidebar-menu">
+            <button class="active" id="nav-users" onclick="switchTab('users')">Manajemen User</button>
+            <button id="nav-courses" onclick="switchTab('courses')">Mata Kuliah & Sesi</button>
+            <button id="nav-recap" onclick="switchTab('recap')">Rekap Presensi</button>
+        </div>
+        <div class="sidebar-footer">
+            <button class="btn-logout" onclick="logout()">Log Out</button>
+        </div>
+    </div>
+
+    <div class="content">
+        <div id="toast" class="toast hidden"></div>
+
+        <div id="panel-users" class="tab-content">
+            <div class="panel">
+                <div class="panel-header"><h3>Tambah User Baru</h3></div>
+                <form id="formUser">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Role</label>
+                            <select id="u-role" required onchange="toggleNim()">
+                                <option value="dosen">Dosen</option>
+                                <option value="mahasiswa">Mahasiswa</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Nama Lengkap</label><input type="text" id="u-name" required></div>
+                        <div class="form-group"><label>Email</label><input type="email" id="u-email" required></div>
+                        <div class="form-group"><label>Password</label><input type="password" id="u-pass" required></div>
+                        <div class="form-group hidden" id="u-nim-wrap"><label>NIM</label><input type="text" id="u-nim"></div>
+                    </div>
+                    <button type="submit" class="btn" id="btn-submit-user">Simpan User</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Daftar User</h3>
+                    <button class="btn btn-sm" onclick="loadUsers()">Refresh</button>
+                </div>
+                <table>
+                    <thead><tr><th>ID</th><th>Nama</th><th>Email</th><th>Role</th><th>NIM</th><th>Aksi</th></tr></thead>
+                    <tbody id="tbl-users"><tr><td colspan="6">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="panel-courses" class="tab-content hidden">
+            <div class="panel">
+                <div class="panel-header"><h3>Buat Mata Kuliah Baru</h3></div>
+                <form id="formCourse">
+                    <div class="form-grid">
+                        <div class="form-group"><label>Course ID (Slug)</label><input type="text" id="c-id" placeholder="mis: cloud-101" required></div>
+                        <div class="form-group"><label>Nama Mata Kuliah</label><input type="text" id="c-name" placeholder="Praktik Komputasi Awan" required></div>
+                    </div>
+                    <button type="submit" class="btn">Buat Mata Kuliah</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header"><h3>Buat Sesi Pertemuan</h3></div>
+                <form id="formSession">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Pilih Mata Kuliah</label>
+                            <select id="s-course" required><option value="">Loading courses...</option></select>
+                        </div>
+                        <div class="form-group"><label>Tanggal</label><input type="date" id="s-date" required></div>
+                        <div class="form-group"><label>Label Sesi</label><input type="text" id="s-label" placeholder="Pertemuan 1" required></div>
+                    </div>
+                    <button type="submit" class="btn">Buat Sesi</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Daftar Mata Kuliah Sistem</h3>
+                    <button class="btn btn-sm" onclick="loadCourses()">Refresh</button>
+                </div>
+                <table>
+                    <thead><tr><th>Course ID</th><th>Nama Mata Kuliah</th><th>Dibuat Pada</th></tr></thead>
+                    <tbody id="tbl-courses"><tr><td colspan="3">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="panel-recap" class="tab-content hidden">
+            <div class="panel">
+                <div class="panel-header"><h3>Lihat Rekap Presensi</h3></div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Pilih Mata Kuliah</label>
+                        <select id="r-course" onchange="loadSessionsForRecap()"><option value="">Pilih...</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pilih Sesi</label>
+                        <select id="r-session"><option value="">Pilih Course dulu...</option></select>
+                    </div>
+                    <div class="form-group" style="display:flex; align-items:flex-end;">
+                        <button class="btn" onclick="fetchRecap()" style="width:100%">Tampilkan Rekap</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Data Kehadiran</h3>
+                    <span id="recap-total" style="font-weight:bold; color:var(--primary);">Total Hadir: 0</span>
+                </div>
+                <table>
+                    <thead><tr><th>NIM</th><th>Nama Mahasiswa</th><th>Jam Check-in</th><th>Lokasi GPS</th></tr></thead>
+                    <tbody id="tbl-recap"><tr><td colspan="4" style="text-align:center;">Pilih sesi dan klik Tampilkan Rekap</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="api.js"></script>
+
+    <script>
+        // --- INISIALISASI VALIDASI LOGIN ---
+        // window.onload = () => {
+        //     // Mengecek apakah user memiliki role 'admin' di memori perangkat
+        //     if (localStorage.getItem("user_role") !== "admin") {
+        //         alert("Akses Ditolak! Harap login sebagai Admin terlebih dahulu.");
+        //         window.location.href = "login.html"; // Pastikan nama file login Anda sesuai
+        //         return;
+        //     }
+        //     loadUsers(); 
+        // };
+
+        // --- SISTEM TAB / ROUTING FRONTEND ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.sidebar button').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`panel-${tabName}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabName}`).classList.add('active');
+
+            if (tabName === 'users') loadUsers();
+            if (tabName === 'courses') loadCourses();
+            if (tabName === 'recap') loadCoursesForRecap();
+        }
+
+        function showToast(msg, type = "success") {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.className = `toast toast-${type}`;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 4000);
+        }
+
+        // --- FUNGSI LOGOUT ---
+        function logout() {
+            // Membersihkan seluruh sesi dan data kredensial
+            localStorage.clear();
+            window.location.href = "login.html";
+        }
+
+        // --- MODUL 1: USER MANAGEMENT ---
+        function toggleNim() {
+            const role = document.getElementById('u-role').value;
+            const wrap = document.getElementById('u-nim-wrap');
+            const input = document.getElementById('u-nim');
+            if(role === 'mahasiswa') { wrap.classList.remove('hidden'); input.required = true; } 
+            else { wrap.classList.add('hidden'); input.required = false; input.value = ''; }
+        }
+
+        document.getElementById('formUser').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                role: document.getElementById('u-role').value,
+                name: document.getElementById('u-name').value,
+                email: document.getElementById('u-email').value,
+                password: document.getElementById('u-pass').value,
+            };
+            if(payload.role === 'mahasiswa') payload.nim = document.getElementById('u-nim').value;
+
+            const res = await apiCall("admin/add-user", payload);
+            if(res.ok) { showToast("User ditambahkan!"); e.target.reset(); toggleNim(); loadUsers(); } 
+            else { showToast(res.error, "error"); }
+        });
+
+        async function loadUsers() {
+            const tbody = document.getElementById('tbl-users');
+            const res = await apiCall("admin/list-users");
+            if(res.ok) {
+                tbody.innerHTML = res.data.items.map(u => `
+                    <tr>
+                        <td style="font-family:monospace">${u.user_id}</td>
+                        <td>${u.name}</td><td>${u.email}</td>
+                        <td><strong style="text-transform:uppercase; font-size:0.8em">${u.role}</strong></td>
+                        <td>${u.nim || '-'}</td>
+                        <td><button class="btn btn-sm btn-danger" onclick="resetPass('${u.email}')">Reset Pass</button></td>
+                    </tr>
+                `).join('');
+            } else { tbody.innerHTML = `<tr><td colspan="6" style="color:red">Backend Error: ${res.error}</td></tr>`; }
+        }
+
+        async function resetPass(email) {
+            const newPass = prompt(`Masukkan password baru untuk ${email}:`);
+            if(!newPass) return;
+            const res = await apiCall("admin/reset-password", { target_email: email, new_password: newPass });
+            if(res.ok) showToast("Password direset!"); else showToast(res.error, "error");
+        }
+
+        // --- MODUL 2: COURSES & SESSIONS ---
+        document.getElementById('formCourse').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await apiCall("courses/create", {
+                course_id: document.getElementById('c-id').value,
+                course_name: document.getElementById('c-name').value
+            });
+            if(res.ok) { showToast("Mata Kuliah dibuat!"); e.target.reset(); loadCourses(); }
+            else showToast(res.error, "error");
+        });
+
+        async function loadCourses() {
+            const res = await apiCall("courses");
+            if(res.ok) {
+                document.getElementById('tbl-courses').innerHTML = res.data.items.map(c => `
+                    <tr><td>${c.course_id}</td><td>${c.course_name}</td><td>${new Date(c.created_at).toLocaleDateString()}</td></tr>
+                `).join('');
+                const selectOpts = '<option value="">Pilih Mata Kuliah...</option>' + res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
+                document.getElementById('s-course').innerHTML = selectOpts;
+            }
+        }
+
+        document.getElementById('formSession').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await apiCall("sessions/create", {
+                course_id: document.getElementById('s-course').value,
+                date: document.getElementById('s-date').value,
+                label: document.getElementById('s-label').value
+            });
+            if(res.ok) { showToast(`Sesi dibuat! ID: ${res.data.session_id}`); e.target.reset(); }
+            else showToast(res.error, "error");
+        });
+
+        // --- MODUL 3: REKAP PRESENSI GLOBAL ---
+        async function loadCoursesForRecap() {
+            const res = await apiCall("courses");
+            if(res.ok) {
+                document.getElementById('r-course').innerHTML = '<option value="">Pilih Mata Kuliah...</option>' + 
+                    res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
+            }
+        }
+
+        async function loadSessionsForRecap() {
+            const courseId = document.getElementById('r-course').value;
+            if(!courseId) return;
+            const res = await apiCall("sessions", { course_id: courseId });
+            if(res.ok) {
+                document.getElementById('r-session').innerHTML = res.data.items.length === 0 ? '<option value="">Belum ada sesi</option>' :
+                    res.data.items.map(s => `<option value="${s.session_id}">${s.label} (${s.date})</option>`).join('');
+            }
+        }
+
+        async function fetchRecap() {
+            const sessionId = document.getElementById('r-session').value;
+            if(!sessionId) return showToast("Pilih sesi terlebih dahulu!", "error");
+
+            const tbody = document.getElementById('tbl-recap');
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Mengambil data...</td></tr>`;
+            
+            const res = await apiCall("presence/history/all", { session_id: sessionId });
+            if(res.ok) {
+                document.getElementById('recap-total').innerText = `Total Hadir: ${res.data.total_hadir}`;
+                if(res.data.total_hadir === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Belum ada yang absen di sesi ini.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = res.data.items.map(i => `
+                    <tr>
+                        <td>${i.nim}</td>
+                        <td>${i.nama}</td>
+                        <td>${new Date(i.jam_checkin).toLocaleTimeString('id-ID')}</td>
+                        <td>${i.maps_url ? `<a href="${i.maps_url}" target="_blank" style="color:var(--primary);">Lihat di Maps</a>` : 'Tidak ada lokasi'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">${res.error}</td></tr>`;
+            }
+        }
+    </script>
+</body>
+</html>
