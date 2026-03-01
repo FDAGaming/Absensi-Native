@@ -61,6 +61,10 @@
     </style>
 </head>
 <body>
+    <div class="mobile-header">
+        <h2>Presensi Panel</h2>
+        <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+    </div>
     <div class="sidebar">
         <div class="sidebar-header">
             <h2>Panel Admin</h2>
@@ -105,10 +109,13 @@
                     <h3>Daftar User</h3>
                     <button class="btn btn-sm" onclick="loadUsers()">Refresh</button>
                 </div>
-                <table>
-                    <thead><tr><th>ID</th><th>Nama</th><th>Email</th><th>Role</th><th>NIM</th><th>Aksi</th></tr></thead>
-                    <tbody id="tbl-users"><tr><td colspan="6">Loading...</td></tr></tbody>
-                </table>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>ID</th><th>Nama</th><th>Email</th><th>Role</th><th>NIM</th><th>Aksi</th></tr></thead>
+                        <tbody id="tbl-users"><tr><td colspan="6">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+                
             </div>
         </div>
 
@@ -349,6 +356,19 @@
                 tbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">${res.error}</td></tr>`;
             }
         }
+        // --- FUNGSI RESPONSIVE SIDEBAR ---
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('show');
+        }
+
+        // Menutup sidebar otomatis setelah menu diklik (khusus di HP)
+        document.querySelectorAll('.sidebar button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if(window.innerWidth <= 768) {
+                    document.querySelector('.sidebar').classList.remove('show');
+                }
+            });
+        });
     </script>
 </body>
 </html>

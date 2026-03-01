@@ -61,7 +61,10 @@
     </style>
 </head>
 <body>
-
+    <div class="mobile-header">
+        <h2>Presensi Panel</h2>
+        <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+    </div>
     <div class="sidebar">
         <div class="sidebar-header">
             <h2>Panel Dosen</h2>
@@ -134,14 +137,16 @@
                 </div>
                 
                 <h4 style="margin-top: 20px; margin-bottom: 10px;" id="recap-info">Total Hadir: 0</h4>
-                <table>
-                    <thead>
-                        <tr><th>NIM</th><th>Nama Mahasiswa</th><th>Waktu Check-in</th><th>Validasi GPS</th></tr>
-                    </thead>
-                    <tbody id="tbl-recap">
-                        <tr><td colspan="4" style="text-align: center; color: #64748b;">Silakan pilih sesi.</td></tr>
-                    </tbody>
-                </table>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>NIM</th><th>Nama Mahasiswa</th><th>Waktu Check-in</th><th>Validasi GPS</th></tr>
+                        </thead>
+                        <tbody id="tbl-recap">
+                            <tr><td colspan="4" style="text-align: center; color: #64748b;">Silakan pilih sesi.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -277,6 +282,19 @@
                 window.location.href = "login.html"; 
             }
         }
+                // --- FUNGSI RESPONSIVE SIDEBAR ---
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('show');
+        }
+
+        // Menutup sidebar otomatis setelah menu diklik (khusus di HP)
+        document.querySelectorAll('.sidebar button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if(window.innerWidth <= 768) {
+                    document.querySelector('.sidebar').classList.remove('show');
+                }
+            });
+        });
     </script>
 </body>
 </html>
