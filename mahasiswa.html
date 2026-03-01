@@ -167,22 +167,22 @@
         let userLat = null, userLng = null, userAcc = null;
 
         // --- 2. INISIALISASI HALAMAN (Validasi Login) ---
-        // window.onload = () => {
-        //     // Cek apakah yang login benar-benar role mahasiswa
-        //     if (localStorage.getItem("user_role") !== "mahasiswa") {
-        //         alert("Akses Ditolak! Harap login sebagai Mahasiswa terlebih dahulu.");
-        //         window.location.href = "login.html"; // Redirect ke halaman login
-        //         return;
-        //     }
+        window.onload = () => {
+            // Cek apakah yang login benar-benar role mahasiswa
+            if (localStorage.getItem("user_role") !== "mahasiswa") {
+                alert("Akses Ditolak! Harap login sebagai Mahasiswa terlebih dahulu.");
+                window.location.href = "login.html"; // Redirect ke halaman login
+                return;
+            }
             
-        //     // Tampilkan nama dari LocalStorage
-        //     document.getElementById('mhs-name').innerText = localStorage.getItem("user_name") || "Mahasiswa";
-        //     document.getElementById('dev-id-display').innerText = DEVICE_ID;
+            // Tampilkan nama dari LocalStorage
+            document.getElementById('mhs-name').innerText = localStorage.getItem("user_name") || "Mahasiswa";
+            document.getElementById('dev-id-display').innerText = DEVICE_ID;
 
-        //     loadCourses();
-        //     initGPS();
-        //     initAccelerometer();
-        // };
+            loadCourses();
+            initGPS();
+            initAccelerometer();
+        };
 
         // --- 3. UI ROUTING ---
         function switchTab(tabId) {

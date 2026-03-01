@@ -194,15 +194,15 @@
 
     <script>
         // --- INISIALISASI VALIDASI LOGIN ---
-        // window.onload = () => {
-        //     // Mengecek apakah user memiliki role 'admin' di memori perangkat
-        //     if (localStorage.getItem("user_role") !== "admin") {
-        //         alert("Akses Ditolak! Harap login sebagai Admin terlebih dahulu.");
-        //         window.location.href = "login.html"; // Pastikan nama file login Anda sesuai
-        //         return;
-        //     }
-        //     loadUsers(); 
-        // };
+        window.onload = () => {
+            // Mengecek apakah user memiliki role 'admin' di memori perangkat
+            if (localStorage.getItem("user_role") !== "admin") {
+                alert("Akses Ditolak! Harap login sebagai Admin terlebih dahulu.");
+                window.location.href = "login.html"; // Pastikan nama file login Anda sesuai
+                return;
+            }
+            loadUsers(); 
+        };
 
         // --- SISTEM TAB / ROUTING FRONTEND ---
         function switchTab(tabName) {
