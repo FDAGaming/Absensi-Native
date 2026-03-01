@@ -152,6 +152,22 @@
             font-size: 0.85rem;
             color: var(--text-muted);
         }
+
+          /* --- RESPONSIVE MOBILE --- */
+    .mobile-header { display: none; background: var(--bg-sidebar); color: white; padding: 15px 20px; align-items: center; justify-content: space-between; z-index: 20; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .mobile-toggle { background: transparent; color: white; border: none; font-size: 1.5rem; cursor: pointer; }
+    .table-wrap { overflow-x: auto; width: 100%; border-radius: 8px; }
+
+    @media (max-width: 768px) {
+        body { flex-direction: column; }
+        .mobile-header { display: flex; }
+        .sidebar { position: fixed; left: -260px; top: 0; bottom: 0; z-index: 50; transition: 0.3s ease-in-out; box-shadow: 4px 0 10px rgba(0,0,0,0.2); }
+        .sidebar.show { left: 0; }
+        .content { padding: 15px; width: 100%; }
+        .panel { padding: 15px; }
+        .form-grid { grid-template-columns: 1fr; } /* Memaksa input form menumpuk ke bawah di HP */
+        .qr-display-area img { max-width: 100%; height: auto; }
+    }
     </style>
 </head>
 <body>
