@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrasi - Presensi Cloud</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Menggunakan ulang variabel CSS dari halaman Login Anda */
+        :root {
+            --bg-body: #f1f5f9;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --success: #10b981;
+            --success-bg: #dcfce3;
+            --border: #e2e8f0;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-wrapper { width: 100%; max-width: 450px; }
+        .login-card { background: var(--card-bg); padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border: 1px solid var(--border); }
+        .login-header { text-align: center; margin-bottom: 25px; }
+        .login-header h1 { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+        .login-header p { font-size: 0.95rem; color: var(--text-muted); }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 0.875rem; font-weight: 500; color: #334155; }
+        .form-control { width: 100%; padding: 12px 16px; font-size: 0.95rem; color: var(--text-main); background-color: #f8fafc; border: 1px solid var(--border); border-radius: 8px; transition: all 0.2s ease; }
+        .form-control:focus { outline: none; border-color: var(--primary); background-color: #ffffff; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        
+        .btn-submit { width: 100%; padding: 12px; font-size: 1rem; font-weight: 600; color: white; background-color: var(--primary); border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; margin-top: 10px; }
+        .btn-submit:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        .btn-submit:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; }
+
+        .alert { display: none; padding: 12px 16px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; margin-bottom: 20px; border: 1px solid transparent; }
+        .alert-danger { background-color: var(--danger-bg); color: var(--danger); border-color: #fecaca; }
+        .alert-success { background-color: var(--success-bg); color: #166534; border-color: #bbf7d0; }
+
+        .login-footer { text-align: center; margin-top: 24px; font-size: 0.9rem; color: var(--text-muted); }
+        .login-footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        .login-footer a:hover { text-decoration: underline; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>Daftar Akun</h1>
+                <p>Bergabung dengan Presensi Cloud</p>
+            </div>
+
+            <div id="status-alert" class="alert"></div>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="role">Mendaftar Sebagai</label>
+                    <select id="role" class="form-control" required onchange="toggleNim()">
+                        <option value="mahasiswa">Mahasiswa</option>
+                        <option value="dosen">Dosen</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="name">Nama Lengkap</label>
+                    <input type="text" id="name" class="form-control" placeholder="Nama sesuai identitas" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Alamat Email</label>
+                    <input type="email" id="email" class="form-control" placeholder="contoh@kampus.ac.id" required>
+                </div>
+
+                <div class="form-group" id="nim-group">
+                    <label for="nim">Nomor Induk Mahasiswa (NIM)</label>
+                    <input type="text" id="nim" class="form-control" placeholder="Masukkan NIM Anda" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Minimal 6 karakter" required minlength="6">
+                </div>
+
+                <button type="submit" id="btnSubmit" class="btn-submit">
+                    Daftar Sekarang
+                </button>
+            </form>
+        </div>
+
+        <div class="login-footer">
+            Sudah punya akun? <a href="index.html">Masuk di sini</a>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    
+    <script>
+        // Logika UX: Toggle NIM berdasarkan Role
+        function toggleNim() {
+            const role = document.getElementById('role').value;
+            const nimGroup = document.getElementById('nim-group');
+            const nimInput = document.getElementById('nim');
+            
+            if(role === 'mahasiswa') { 
+                nimGroup.classList.remove('hidden'); 
+                nimInput.required = true; 
+            } else { 
+                nimGroup.classList.add('hidden'); 
+                nimInput.required = false; 
+                nimInput.value = ''; 
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('status-alert');
+            alertBox.innerText = message;
+            alertBox.className = `alert alert-${type}`;
+            alertBox.style.display = "block";
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btnSubmit = document.getElementById('btnSubmit');
+            const alertBox = document.getElementById('status-alert');
+            
+            // State: Loading
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = 'Memproses Data...';
+            alertBox.style.display = "none";
+
+            // Siapkan payload sesuai Kontrak API
+            const payload = {
+                role: document.getElementById('role').value,
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            };
+
+            // Tambahkan NIM jika yang mendaftar adalah mahasiswa
+            if (payload.role === 'mahasiswa') {
+                payload.nim = document.getElementById('nim').value;
+            }
+
+            // Panggil API (auth_token tidak diperlukan)
+            const result = await apiCall("auth/register", payload);
+
+            if (result.ok) {
+                // Sukses: Tampilkan pesan sukses, lalu arahkan ke halaman login
+                showAlert("Registrasi berhasil! Mengalihkan ke halaman login...", "success");
+                
+                // Beri jeda 2 detik agar user sempat membaca pesan sukses
+                setTimeout(() => {
+                    window.location.href = "index.html";
+                }, 2000);
+            } else {
+                // Gagal: Tampilkan alert merah dari server
+                showAlert(result.error || "Gagal melakukan registrasi.", "danger");
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = 'Daftar Sekarang';
+            }
+        });
+    </script>
+</body>
+</html>

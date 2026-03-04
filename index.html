@@ -189,7 +189,7 @@
                     <input type="email" id="email" class="form-control" placeholder="contoh@kampus.ac.id" required autocomplete="email">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group"o>
                     <label for="password">Password</label>
                     <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
                 </div>
@@ -201,6 +201,8 @@
         </div>
 
         <div class="login-footer">
+            Belum punya akun? <a href="register.html" style="color: var(--primary); text-decoration: none; font-weight: 600;">Daftar di sini</a>
+            <br><br>
             &copy; 2026 Sistem Presensi Akademik Terpadu
         </div>
     </div>
@@ -246,7 +248,7 @@
                 password: passwordInput
             });
 
-            if (result.ok) {
+            if (result.ok) {o
                 // Sukses: Simpan data kredensial
                 localStorage.setItem("auth_token", result.data.token);
                 localStorage.setItem("user_role", result.data.role);
@@ -259,7 +261,7 @@
                 errorAlert.innerText = result.error || "Gagal terhubung ke server.";
                 errorAlert.style.display = "block";
                 
-                // Kembalikan tombol
+                // Kembalikan tombolo
                 btnSubmit.disabled = false;
                 btnSubmit.innerHTML = 'Masuk';
             }
