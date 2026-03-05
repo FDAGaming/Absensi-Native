@@ -99,6 +99,17 @@
                     <span>Sensor Accelerometer:</span>
                     <span id="accel-status" class="status-badge status-err">Menunggu...</span>
                 </div>
+                <div id="accel-data" class="hidden" style="margin-top: 12px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
+                    <div style="display:flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color:#64748b;">Sumbu X (Kiri/Kanan):</span> <strong id="accel-x" style="color:#3b82f6;">0.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color:#64748b;">Sumbu Y (Maju/Mundur):</span> <strong id="accel-y" style="color:#10b981;">0.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content: space-between;">
+                        <span style="color:#64748b;">Sumbu Z (Atas/Bawah):</span> <strong id="accel-z" style="color:#ef4444;">0.00</strong>
+                    </div>
+                </div>
                 <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 15px;">
                     * Sensor akan mengirim data (telemetry) secara otomatis ke server saat aplikasi ini terbuka.
                 </p>
@@ -371,6 +382,14 @@
                         document.getElementById('accel-status').innerText = "Aktif (Merekam)";
                         document.getElementById('accel-status').className = "status-badge status-ok";
                         
+                        // --- TAMBAHAN: Update UI Angka Sensor ---
+                        document.getElementById('accel-data').classList.remove('hidden');
+                        document.getElementById('accel-x').innerText = ax.toFixed(2);
+                        document.getElementById('accel-y').innerText = ay.toFixed(2);
+                        document.getElementById('accel-z').innerText = az.toFixed(2);
+                        // ----------------------------------------
+
+                        // Simpan sample ke memori lokal
                         accelBatch.push({
                             t: new Date().toISOString(),
                             x: parseFloat(ax.toFixed(3)),
