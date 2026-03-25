@@ -3,419 +3,518 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presensi Mahasiswa</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Presensi Mahasiswa - PresensiQR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link rel="stylesheet" href="style.css">
     <style>
-        :root { --bg-body: #f8fafc; --bg-panel: #ffffff; --primary: #10b981; --primary-hover: #059669; --text-main: #334155; --border: #e2e8f0; --danger: #ef4444; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        
-        /* Mobile-first Layout */
-        body { display: flex; flex-direction: column; height: 100vh; background-color: var(--bg-body); color: var(--text-main); }
-        
-        .header { background: #0f172a; color: white; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 10; }
-        .header h1 { font-size: 1.2rem; font-weight: 600; }
-        .header p { font-size: 0.85rem; color: #cbd5e1; margin-top: 4px; }
-        
-        .content { flex: 1; padding: 20px; overflow-y: auto; padding-bottom: 80px; /* Space for bottom nav */ }
-        
-        .panel { background: var(--bg-panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        h3 { font-size: 1.1rem; color: #0f172a; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        
-        /* Forms */
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-size: 0.85rem; font-weight: 500; }
-        select, input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; background: #f8fafc; }
-        .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem; background: var(--primary); color: white; transition: 0.2s; text-align: center; }
-        .btn:hover { background: var(--primary-hover); }
-        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
-        .btn-danger { background: var(--danger); }
-        .btn-danger:hover { background: #dc2626; }
-        
-        /* QR Reader */
-        #reader { width: 100%; border-radius: 12px; overflow: hidden; border: 2px dashed #cbd5e1; display: none; margin-bottom: 15px; }
-        .scanner-active #reader { display: block; }
-        
-        /* Table */
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 400px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
-        th { background: #f8fafc; font-weight: 600; }
-        
-        /* Bottom Nav */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid var(--border); box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
-        .bottom-nav button { flex: 1; padding: 15px 0; background: none; border: none; font-size: 0.85rem; font-weight: 600; color: #64748b; cursor: pointer; transition: 0.2s; border-bottom: 3px solid transparent; }
-        .bottom-nav button.active { color: var(--primary); border-bottom-color: var(--primary); background: #f0fdf4; }
-        
-        /* Utilities */
-        .hidden { display: none !important; }
-        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
-        .status-ok { background: #dcfce3; color: #166534; }
-        .status-err { background: #fee2e2; color: #991b1b; }
-        
-        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-size: 0.9rem; text-align: center; width: 90%; max-width: 400px; }
-        .toast-success { background: #10b981; }
-        .toast-error { background: #ef4444; }
-
-          /* --- RESPONSIVE MOBILE --- */
-    .mobile-header { display: none; background: var(--bg-sidebar); color: white; padding: 15px 20px; align-items: center; justify-content: space-between; z-index: 20; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .mobile-toggle { background: transparent; color: white; border: none; font-size: 1.5rem; cursor: pointer; }
-    .table-wrap { overflow-x: auto; width: 100%; border-radius: 8px; }
-
-    @media (max-width: 768px) {
-        body { flex-direction: column; }
-        .mobile-header { display: flex; }
-        .sidebar { position: fixed; left: -260px; top: 0; bottom: 0; z-index: 50; transition: 0.3s ease-in-out; box-shadow: 4px 0 10px rgba(0,0,0,0.2); }
-        .sidebar.show { left: 0; }
-        .content { padding: 15px; width: 100%; }
-        .panel { padding: 15px; }
-        .form-grid { grid-template-columns: 1fr; } /* Memaksa input form menumpuk ke bawah di HP */
-        .qr-display-area img { max-width: 100%; height: auto; }
-    }
+        .main-layout { display: flex; min-height: 100vh; flex-direction: column; }
+        .body-layout { display: flex; flex: 1; }
+        .left-sidebar { width: 220px; background: #fff; border-right: 1px solid var(--bdr); padding: 16px 10px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 58px; height: calc(100vh - 58px); overflow-y: auto; }
+        .main-content { flex: 1; padding: 24px; background: var(--bg); overflow-y: auto; }
+        .tab-panel { display: none; } .tab-panel.active { display: block; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 13px 20px; border-radius: 10px; color: white; z-index: 9999; font-size: .88rem; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,.15); display: none; }
+        .toast.show { display: block; animation: pop-in .2s ease; }
+        .toast-success { background: var(--grn2); }
+        .toast-error { background: var(--red); }
+        #qr-reader { width: 100%; max-width: 360px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 1.5px solid var(--bdr); }
+        @media (max-width: 700px) {
+            .body-layout { flex-direction: column; }
+            .left-sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; border-right: none; border-bottom: 1px solid var(--bdr); }
+        }
     </style>
 </head>
 <body>
+<div class="main-layout">
 
-    <div class="header">
-        <h1 id="mhs-name">Memuat Data...</h1>
-        <p id="mhs-role" style="text-transform: uppercase;">MAHASISWA</p>
-    </div>
-
-    <div class="content">
-        <div id="toast" class="toast hidden"></div>
-
-        <div id="tab-home" class="tab-content">
-            <div class="panel">
-                <h3>Status Perangkat</h3>
-                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 10px;">
-                    Device ID: <strong id="dev-id-display"></strong>
-                </p>
-                
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem;">
-                    <span>Akses Lokasi (GPS):</span>
-                    <span id="gps-status" class="status-badge status-err">Belum Aktif</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
-                    <span>Sensor Accelerometer:</span>
-                    <span id="accel-status" class="status-badge status-err">Menunggu...</span>
-                </div>
-                <div id="accel-data" class="hidden" style="margin-top: 12px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
-                    <div style="display:flex; justify-content: space-between; margin-bottom: 6px;">
-                        <span style="color:#64748b;">Sumbu X (Kiri/Kanan):</span> <strong id="accel-x" style="color:#3b82f6;">0.00</strong>
-                    </div>
-                    <div style="display:flex; justify-content: space-between; margin-bottom: 6px;">
-                        <span style="color:#64748b;">Sumbu Y (Maju/Mundur):</span> <strong id="accel-y" style="color:#10b981;">0.00</strong>
-                    </div>
-                    <div style="display:flex; justify-content: space-between;">
-                        <span style="color:#64748b;">Sumbu Z (Atas/Bawah):</span> <strong id="accel-z" style="color:#ef4444;">0.00</strong>
-                    </div>
-                </div>
-                <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 15px;">
-                    * Sensor akan mengirim data (telemetry) secara otomatis ke server saat aplikasi ini terbuka.
-                </p>
-            </div>
-            
-            <button class="btn btn-danger" onclick="logout()">Keluar Akun (Log Out)</button>
-        </div>
-
-        <div id="tab-scan" class="tab-content hidden">
-            <div class="panel">
-                <h3>Check-in Kelas</h3>
-                <div class="form-group">
-                    <label>Pilih Mata Kuliah</label>
-                    <select id="s-course" onchange="loadSessions()"><option value="">Memuat...</option></select>
-                </div>
-                <div class="form-group">
-                    <label>Pilih Sesi</label>
-                    <select id="s-session"><option value="">Pilih Mata Kuliah Dulu</option></select>
-                </div>
-                
-                <div id="scanner-container">
-                    <div id="reader"></div>
-                    <button class="btn" id="btn-start-scan" onclick="startScanner()">Buka Kamera Scanner</button>
-                    <button class="btn btn-danger hidden" id="btn-stop-scan" onclick="stopScanner()">Tutup Kamera</button>
-                </div>
+    <!-- NAV -->
+    <nav>
+        <div class="nav-brand">
+            <div class="nav-logo">📋</div>
+            <div>
+                <div class="nav-title">Presensi<span>QR</span></div>
+                <div class="nav-sub">Cloud Computing / Versi A</div>
             </div>
         </div>
+        <div class="nav-r">
+            <span class="nav-name" id="nav-username">Mahasiswa</span>
+            <span class="role-pill rp-mahasiswa">MAHASISWA</span>
+            <button class="btn-nav" onclick="logout()">Keluar</button>
+        </div>
+    </nav>
 
-        <div id="tab-history" class="tab-content hidden">
-            <div class="panel">
-                <h3>Riwayat Kehadiran</h3>
-                <div class="form-group">
-                    <label>Pilih Mata Kuliah</label>
-                    <select id="h-course"><option value="">Memuat...</option></select>
-                </div>
-                <button class="btn" onclick="fetchHistory()" style="margin-bottom: 15px; padding: 10px;">Lihat Riwayat</button>
-                
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr><th>Pertemuan</th><th>Tanggal</th><th>Jam</th><th>Status</th></tr></thead>
-                        <tbody id="tbl-history">
-                            <tr><td colspan="4" style="text-align:center;">Pilih kelas untuk melihat riwayat.</td></tr>
-                        </tbody>
-                    </table>
+    <div class="body-layout">
+        <!-- SIDEBAR -->
+        <div class="left-sidebar">
+            <button class="sb-btn active" id="nav-dashboard" onclick="switchTab('dashboard')">
+                <span class="sb-icon">🏠</span> Dashboard
+            </button>
+            <div class="sb-sep">PRESENSI</div>
+            <button class="sb-btn" id="nav-scan" onclick="switchTab('scan')">
+                <span class="sb-icon">📷</span> Scan QR
+            </button>
+            <button class="sb-btn" id="nav-token" onclick="switchTab('token')">
+                <span class="sb-icon">🔑</span> Token Manual
+            </button>
+            <button class="sb-btn" id="nav-history" onclick="switchTab('history')">
+                <span class="sb-icon">📋</span> History Saya
+            </button>
+            <div class="sb-sep">SENSOR</div>
+            <button class="sb-btn" id="nav-accel" onclick="switchTab('accel')">
+                <span class="sb-icon">📡</span> Accelerometer
+            </button>
+            <button class="sb-btn" id="nav-gps" onclick="switchTab('gps')">
+                <span class="sb-icon">📍</span> GPS Tracking
+            </button>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <div id="toast" class="toast"></div>
+
+            <!-- DASHBOARD -->
+            <div id="panel-dashboard" class="tab-panel active">
+                <div class="card">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">🏠</div> Dashboard</h2>
+                    </div>
+                    <p class="mut" style="margin-bottom:16px">
+                        Halo, <strong id="dash-name">-</strong>&nbsp; Role: <span class="badge b-mhs">mahasiswa</span>&nbsp; NIM: <code id="dash-nim">-</code>
+                    </p>
+                    <div class="stats">
+                        <div class="stat s-grn">
+                            <div class="stat-n" id="stat-hadir">-</div>
+                            <div class="stat-l">Total Hadir</div>
+                        </div>
+                        <div class="stat s-ind">
+                            <div class="stat-n" id="stat-mk">-</div>
+                            <div class="stat-l">Mata Kuliah</div>
+                        </div>
+                        <div class="stat s-amb">
+                            <div class="stat-n" id="stat-device">-</div>
+                            <div class="stat-l">Device</div>
+                        </div>
+                    </div>
+                    <p class="mut" style="margin-top:12px; font-size:.8rem; text-align:center;">Pilih menu di sidebar untuk memulai</p>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="bottom-nav">
-        <button id="nav-home" class="active" onclick="switchTab('home')">Beranda</button>
-        <button id="nav-scan" onclick="switchTab('scan')">Scan QR</button>
-        <button id="nav-history" onclick="switchTab('history')">Riwayat</button>
-    </div>
+            <!-- SCAN QR -->
+            <div id="panel-scan" class="tab-panel">
+                <div class="card">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">📷</div> Scan QR Presensi</h2>
+                    </div>
+                    <div class="row2">
+                        <div class="fg">
+                            <label>Mata Kuliah</label>
+                            <select id="s-course" onchange="loadSessions()">
+                                <option value="">Pilih Mata Kuliah...</option>
+                            </select>
+                        </div>
+                        <div class="fg">
+                            <label>Sesi</label>
+                            <select id="s-session">
+                                <option value="">Pilih course dulu...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="scanner-wrap" style="margin-top:12px">
+                        <div id="qr-reader"></div>
+                        <div style="display:flex;gap:10px;margin-top:12px">
+                            <button class="btn btn-primary btn-full" id="btn-start-scan" onclick="startScanner()">Buka Kamera Scanner</button>
+                            <button class="btn btn-red btn-full" id="btn-stop-scan" style="display:none" onclick="stopScanner()">Tutup Kamera</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <script src="api.js"></script>
+            <!-- TOKEN MANUAL -->
+            <div id="panel-token" class="tab-panel">
+                <div class="card">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">🔑</div> Input Token Manual</h2>
+                    </div>
+                    <div class="row2">
+                        <div class="fg">
+                            <label>Mata Kuliah</label>
+                            <select id="t-course" onchange="loadSessionsForToken()">
+                                <option value="">Pilih Mata Kuliah...</option>
+                            </select>
+                        </div>
+                        <div class="fg">
+                            <label>Sesi</label>
+                            <select id="t-session">
+                                <option value="">Pilih course dulu...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="fg">
+                        <label>Token QR</label>
+                        <input type="text" id="t-token" placeholder="Masukkan token dari layar dosen..." style="font-family:var(--mono)">
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="submitToken()">Kirim Presensi</button>
+                    <div id="token-alert" class="alert" style="margin-top:10px"></div>
+                </div>
+            </div>
 
-    <script>
-        // --- 1. SETUP IDENTITAS PERANGKAT ---
-        if (!localStorage.getItem("device_id")) {
-            localStorage.setItem("device_id", "dev-mhs-" + Math.random().toString(36).substr(2, 9));
+            <!-- HISTORY -->
+            <div id="panel-history" class="tab-panel">
+                <div class="card">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">📋</div> Riwayat Kehadiran Saya</h2>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:flex-end">
+                        <div class="fg" style="flex:1;margin-bottom:0">
+                            <label>Mata Kuliah</label>
+                            <select id="h-course">
+                                <option value="">Pilih Mata Kuliah...</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" style="white-space:nowrap" onclick="fetchHistory()">Lihat Riwayat</button>
+                    </div>
+                    <div class="tbl-wrap" style="margin-top:16px">
+                        <table>
+                            <thead><tr><th>Pertemuan</th><th>Tanggal</th><th>Jam Check-in</th><th>Status</th></tr></thead>
+                            <tbody id="tbl-history"><tr><td colspan="4" class="empty">Pilih mata kuliah untuk melihat riwayat</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACCELEROMETER -->
+            <div id="panel-accel" class="tab-panel">
+                <div class="card">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">📡</div> Accelerometer</h2>
+                        <span id="accel-live-badge" class="live-badge lb-off"><span class="lb-dot"></span>OFF</span>
+                    </div>
+                    <div class="accel-display">
+                        <div class="accel-axis ax-x">
+                            <div class="axis-label">Sumbu X</div>
+                            <div class="axis-val" id="accel-x">0.00</div>
+                            <div class="axis-unit">m/s²</div>
+                        </div>
+                        <div class="accel-axis ax-y">
+                            <div class="axis-label">Sumbu Y</div>
+                            <div class="axis-val" id="accel-y">0.00</div>
+                            <div class="axis-unit">m/s²</div>
+                        </div>
+                        <div class="accel-axis ax-z">
+                            <div class="axis-label">Sumbu Z</div>
+                            <div class="axis-val" id="accel-z">0.00</div>
+                            <div class="axis-unit">m/s²</div>
+                        </div>
+                    </div>
+                    <p class="mut" style="font-size:.78rem;margin-top:8px">
+                        Device ID: <code id="dev-id-display">-</code> &nbsp;·&nbsp; Data dikirim otomatis ke server setiap 5 detik.
+                    </p>
+                </div>
+            </div>
+
+            <!-- GPS TRACKING -->
+            <div id="panel-gps" class="tab-panel">
+                <div class="card">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">📍</div> GPS Tracking</h2>
+                        <span id="gps-badge" class="live-badge lb-off"><span class="lb-dot"></span>Belum Aktif</span>
+                    </div>
+                    <div class="info-pill" style="margin-bottom:10px">
+                        <div class="ip-icon">📍</div>
+                        <div>
+                            <div class="ip-key">Koordinat</div>
+                            <div class="ip-val" id="gps-coords">Menunggu sinyal...</div>
+                        </div>
+                    </div>
+                    <div class="info-pill">
+                        <div class="ip-icon">🎯</div>
+                        <div>
+                            <div class="ip-key">Akurasi</div>
+                            <div class="ip-val" id="gps-accuracy">-</div>
+                        </div>
+                    </div>
+                    <p class="mut" style="font-size:.78rem;margin-top:12px">Lokasi dikirim otomatis ke server saat GPS aktif.</p>
+                </div>
+            </div>
+
+        </div><!-- end main-content -->
+    </div><!-- end body-layout -->
+</div><!-- end main-layout -->
+
+<script src="api.js"></script>
+<script>
+    // --- DEVICE ID ---
+    if (!localStorage.getItem("device_id")) {
+        localStorage.setItem("device_id", "dev-mhs-" + Math.random().toString(36).substr(2, 9));
+    }
+    const DEVICE_ID = localStorage.getItem("device_id");
+
+    let html5QrCode;
+    let userLat = null, userLng = null, userAcc = null;
+    let accelBatch = [];
+
+    window.onload = () => {
+        if (localStorage.getItem("user_role") !== "mahasiswa") {
+            alert("Akses Ditolak! Harap login sebagai Mahasiswa.");
+            window.location.href = "index.html";
+            return;
         }
-        const DEVICE_ID = localStorage.getItem("device_id");
-        
-        let html5QrCode;
-        let userLat = null, userLng = null, userAcc = null;
+        const name = localStorage.getItem("user_name") || "Mahasiswa";
+        const nim = localStorage.getItem("user_nim") || "-";
 
-        // --- 2. INISIALISASI HALAMAN (Validasi Login) ---
-        window.onload = () => {
-            // Cek apakah yang login benar-benar role mahasiswa
-            if (localStorage.getItem("user_role") !== "mahasiswa") {
-                alert("Akses Ditolak! Harap login sebagai Mahasiswa terlebih dahulu.");
-                window.location.href = "index.html"; // Redirect ke halaman login
-                return;
-            }
-            
-            // Tampilkan nama dari LocalStorage
-            document.getElementById('mhs-name').innerText = localStorage.getItem("user_name") || "Mahasiswa";
-            document.getElementById('dev-id-display').innerText = DEVICE_ID;
+        document.getElementById('nav-username').textContent = name;
+        document.getElementById('dash-name').textContent = name;
+        document.getElementById('dash-nim').textContent = nim;
+        document.getElementById('dev-id-display').textContent = DEVICE_ID;
+        document.getElementById('stat-device').textContent = DEVICE_ID.slice(-6);
 
-            loadCourses();
-            initGPS();
-            initAccelerometer();
-        };
+        loadCourses();
+        loadDashboardStats();
+        initGPS();
+        initAccelerometer();
+    };
 
-        // --- 3. UI ROUTING ---
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.bottom-nav button').forEach(el => el.classList.remove('active'));
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            document.getElementById(`nav-${tabId}`).classList.add('active');
-            
-            if(tabId !== 'scan' && html5QrCode) stopScanner();
+    function switchTab(name) {
+        document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.sb-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(`panel-${name}`).classList.add('active');
+        const btn = document.getElementById(`nav-${name}`);
+        if (btn) btn.classList.add('active');
+
+        if (name !== 'scan' && html5QrCode) stopScanner();
+        if (name === 'history') loadCoursesForHistory();
+        if (name === 'token') loadCoursesForToken();
+    }
+
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `toast toast-${type} show`;
+        setTimeout(() => t.classList.remove('show'), 4000);
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = "index.html";
+    }
+
+    // --- DASHBOARD STATS ---
+    async function loadDashboardStats() {
+        const res = await apiCall("courses");
+        if (res.ok) {
+            document.getElementById('stat-mk').textContent = res.data.items.length;
         }
-
-        function showToast(msg, type = "success") {
-            const t = document.getElementById('toast');
-            t.innerText = msg; t.className = `toast toast-${type}`;
-            t.classList.remove('hidden');
-            setTimeout(() => t.classList.add('hidden'), 4000);
+        // Hitung total hadir dari semua course
+        let total = 0;
+        if (res.ok) {
+            await Promise.all(res.data.items.map(async c => {
+                const r = await apiCall("presence/history", { course_id: c.course_id });
+                if (r.ok) total += r.data.items.length;
+            }));
         }
+        document.getElementById('stat-hadir').textContent = total;
+    }
 
-        // --- FUNGSI LOGOUT ---
-        function logout() {
-            if (confirm("Apakah Anda yakin ingin keluar dari akun ini?")) {
-                localStorage.clear();
-                window.location.href = "index.html";
-            }
+    // --- LOAD COURSES ---
+    async function loadCourses() {
+        const res = await apiCall("courses");
+        if (res.ok) {
+            const opts = '<option value="">Pilih Mata Kuliah...</option>' +
+                res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
+            document.getElementById('s-course').innerHTML = opts;
         }
+    }
 
-        // --- 4. DATA MATA KULIAH ---
-        async function loadCourses() {
-            const res = await apiCall("courses");
-            if(res.ok) {
-                const opts = '<option value="">Pilih Mata Kuliah...</option>' + res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
-                document.getElementById('s-course').innerHTML = opts;
-                document.getElementById('h-course').innerHTML = opts;
-            }
+    async function loadCoursesForHistory() {
+        const res = await apiCall("courses");
+        if (res.ok) {
+            document.getElementById('h-course').innerHTML = '<option value="">Pilih Mata Kuliah...</option>' +
+                res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
         }
+    }
 
-        async function loadSessions() {
-            const courseId = document.getElementById('s-course').value;
-            if(!courseId) return;
-            const res = await apiCall("sessions", { course_id: courseId });
-            if(res.ok) {
-                document.getElementById('s-session').innerHTML = res.data.items.length === 0 ? '<option value="">Belum ada sesi</option>' :
-                    res.data.items.map(s => `<option value="${s.session_id}">${s.label}</option>`).join('');
-            }
+    async function loadCoursesForToken() {
+        const res = await apiCall("courses");
+        if (res.ok) {
+            document.getElementById('t-course').innerHTML = '<option value="">Pilih Mata Kuliah...</option>' +
+                res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
         }
+    }
 
-        // --- 5. LOGIKA SCANNER QR & CHECK-IN ---
-        function startScanner() {
-            const cId = document.getElementById('s-course').value;
-            const sId = document.getElementById('s-session').value;
-            if(!cId || !sId) return alert("Anda harus memilih Mata Kuliah dan Sesi terlebih dahulu!");
+    async function loadSessions() {
+        const courseId = document.getElementById('s-course').value;
+        if (!courseId) return;
+        const res = await apiCall("sessions", { course_id: courseId });
+        if (res.ok) {
+            document.getElementById('s-session').innerHTML = res.data.items.length === 0
+                ? '<option value="">Belum ada sesi</option>'
+                : res.data.items.map(s => `<option value="${s.session_id}">${s.label}</option>`).join('');
+        }
+    }
 
-            document.getElementById('scanner-container').classList.add('scanner-active');
-            document.getElementById('btn-start-scan').classList.add('hidden');
-            document.getElementById('btn-stop-scan').classList.remove('hidden');
+    async function loadSessionsForToken() {
+        const courseId = document.getElementById('t-course').value;
+        if (!courseId) return;
+        const res = await apiCall("sessions", { course_id: courseId });
+        if (res.ok) {
+            document.getElementById('t-session').innerHTML = res.data.items.length === 0
+                ? '<option value="">Belum ada sesi</option>'
+                : res.data.items.map(s => `<option value="${s.session_id}">${s.label}</option>`).join('');
+        }
+    }
 
-            html5QrCode = new Html5Qrcode("reader");
-            
-            html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                async (decodedText) => {
-                    stopScanner();
-                    processCheckIn(decodedText, cId, sId);
-                },
-                (errorMessage) => { /* Abaikan error frame */ }
-            ).catch(err => {
-                alert("Gagal mengakses kamera. Pastikan Anda memberi izin.");
+    // --- SCAN QR ---
+    function startScanner() {
+        const cId = document.getElementById('s-course').value;
+        const sId = document.getElementById('s-session').value;
+        if (!cId || !sId) return showToast("Pilih Mata Kuliah dan Sesi terlebih dahulu!", "error");
+
+        document.getElementById('btn-start-scan').style.display = 'none';
+        document.getElementById('btn-stop-scan').style.display = '';
+
+        html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            async (decodedText) => {
                 stopScanner();
-            });
+                processCheckIn(decodedText, cId, sId);
+            },
+            () => {}
+        ).catch(() => {
+            showToast("Gagal mengakses kamera. Pastikan izin diberikan.", "error");
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => { html5QrCode.clear(); html5QrCode = null; }).catch(() => {});
+        }
+        document.getElementById('btn-start-scan').style.display = '';
+        document.getElementById('btn-stop-scan').style.display = 'none';
+    }
+
+    async function processCheckIn(token, courseId, sessionId) {
+        showToast("Memproses presensi...");
+        const payload = { device_id: DEVICE_ID, course_id: courseId, session_id: sessionId, qr_token: token };
+        if (userLat !== null) { payload.lat = userLat; payload.lng = userLng; payload.accuracy_m = userAcc; }
+
+        const res = await apiCall("presence/checkin", payload);
+        if (res.ok) {
+            showToast("Check-in Berhasil!");
+            switchTab('history');
+        } else {
+            showToast(`Gagal: ${res.error}`, "error");
+        }
+    }
+
+    // --- TOKEN MANUAL ---
+    async function submitToken() {
+        const courseId = document.getElementById('t-course').value;
+        const sessionId = document.getElementById('t-session').value;
+        const token = document.getElementById('t-token').value.trim();
+        const alertEl = document.getElementById('token-alert');
+
+        if (!courseId || !sessionId || !token) {
+            alertEl.textContent = "Lengkapi semua field terlebih dahulu.";
+            alertEl.className = "alert a-err show";
+            return;
         }
 
-        function stopScanner() {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    html5QrCode.clear();
-                    html5QrCode = null;
-                }).catch(err => console.log(err));
-            }
-            document.getElementById('scanner-container').classList.remove('scanner-active');
-            document.getElementById('btn-start-scan').classList.remove('hidden');
-            document.getElementById('btn-stop-scan').classList.add('hidden');
+        alertEl.className = "alert";
+        const payload = { device_id: DEVICE_ID, course_id: courseId, session_id: sessionId, qr_token: token };
+        if (userLat !== null) { payload.lat = userLat; payload.lng = userLng; payload.accuracy_m = userAcc; }
+
+        const res = await apiCall("presence/checkin", payload);
+        if (res.ok) {
+            alertEl.textContent = "Presensi berhasil dicatat!";
+            alertEl.className = "alert a-ok show";
+            document.getElementById('t-token').value = '';
+        } else {
+            alertEl.textContent = res.error;
+            alertEl.className = "alert a-err show";
         }
+    }
 
-        async function processCheckIn(token, courseId, sessionId) {
-            showToast("Memproses Presensi...", "success");
+    // --- HISTORY ---
+    async function fetchHistory() {
+        const cId = document.getElementById('h-course').value;
+        if (!cId) return showToast("Pilih mata kuliah!", "error");
 
-            const payload = {
-                device_id: DEVICE_ID,
-                course_id: courseId,
-                session_id: sessionId,
-                qr_token: token
-            };
+        const tbody = document.getElementById('tbl-history');
+        tbody.innerHTML = `<tr><td colspan="4" class="empty">Memuat...</td></tr>`;
 
-            if (userLat !== null) {
-                payload.lat = userLat;
-                payload.lng = userLng;
-                payload.accuracy_m = userAcc;
-            }
-
-            const res = await apiCall("presence/checkin", payload);
-            
-            if (res.ok) {
-                alert(`Check-in Berhasil!\nID Presensi: ${res.data.presence_id}`);
-                switchTab('history'); 
-                fetchHistory(); 
-            } else {
-                alert(`Gagal Check-in: ${res.error}`);
-            }
-        }
-
-        // --- 6. RIWAYAT ABSENSI ---
-        async function fetchHistory() {
-            const cId = document.getElementById('h-course').value;
-            if(!cId) return showToast("Pilih mata kuliah!", "error");
-
-            const tbody = document.getElementById('tbl-history');
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Memuat...</td></tr>`;
-
-            // Endpoint history membutuhkan course_id 
-            const res = await apiCall("presence/history", { course_id: cId });
-            
-            if(res.ok) {
-                if(res.data.items.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Belum ada riwayat.</td></tr>`;
-                    return;
-                }
-                tbody.innerHTML = res.data.items.map(i => `
+        const res = await apiCall("presence/history", { course_id: cId });
+        if (res.ok) {
+            tbody.innerHTML = res.data.items.length === 0
+                ? `<tr><td colspan="4" class="empty">Belum ada riwayat kehadiran.</td></tr>`
+                : res.data.items.map(i => `
                     <tr>
                         <td>${i.pertemuan}</td>
                         <td>${i.tanggal}</td>
                         <td>${new Date(i.jam_checkin).toLocaleTimeString('id-ID')}</td>
-                        <td><span class="status-badge status-ok">${i.status}</span></td>
+                        <td><span class="badge b-ok">${i.status}</span></td>
                     </tr>
                 `).join('');
-            } else {
-                tbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">${res.error}</td></tr>`;
-            }
+        } else {
+            tbody.innerHTML = `<tr><td colspan="4" class="empty" style="color:var(--red)">${res.error}</td></tr>`;
         }
+    }
 
-        // --- 7. BACKGROUND TELEMETRY: GPS ---
-        function initGPS() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.watchPosition(
-                    (position) => {
-                        userLat = position.coords.latitude;
-                        userLng = position.coords.longitude;
-                        userAcc = position.coords.accuracy;
-                        
-                        const badge = document.getElementById('gps-status');
-                        badge.innerText = `Aktif (${Math.round(userAcc)}m)`;
-                        badge.className = "status-badge status-ok";
+    // --- GPS TELEMETRY ---
+    function initGPS() {
+        if (!("geolocation" in navigator)) return;
+        navigator.geolocation.watchPosition(
+            (pos) => {
+                userLat = pos.coords.latitude;
+                userLng = pos.coords.longitude;
+                userAcc = pos.coords.accuracy;
 
-                        apiCall("telemetry/gps", {
-                            device_id: DEVICE_ID,
-                            ts: new Date().toISOString(),
-                            lat: userLat,
-                            lng: userLng,
-                            accuracy_m: userAcc
-                        });
-                    },
-                    (error) => {
-                        console.warn("GPS Error: ", error.message);
-                        document.getElementById('gps-status').innerText = "Ditolak / Error";
-                    },
-                    { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
-                );
-            }
-        }
+                const badge = document.getElementById('gps-badge');
+                badge.className = "live-badge lb-on";
+                badge.innerHTML = `<span class="lb-dot"></span>Aktif (${Math.round(userAcc)}m)`;
+                document.getElementById('gps-coords').textContent = `${userLat.toFixed(6)}, ${userLng.toFixed(6)}`;
+                document.getElementById('gps-accuracy').textContent = `±${Math.round(userAcc)} meter`;
 
-        // --- 8. BACKGROUND TELEMETRY: ACCELEROMETER BATCHING ---
-        let accelBatch = [];
-        
-        function initAccelerometer() {
-            if (window.DeviceMotionEvent) {
-                if (typeof DeviceMotionEvent.requestPermission === 'function') {
-                    document.getElementById('accel-status').innerText = "Butuh Izin iOS";
-                }
+                apiCall("telemetry/gps", { device_id: DEVICE_ID, ts: new Date().toISOString(), lat: userLat, lng: userLng, accuracy_m: userAcc });
+            },
+            (err) => {
+                console.warn("GPS:", err.message);
+                document.getElementById('gps-badge').innerHTML = `<span class="lb-dot"></span>Ditolak`;
+                document.getElementById('gps-coords').textContent = "Akses lokasi ditolak";
+            },
+            { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+        );
+    }
 
-                window.addEventListener('devicemotion', (event) => {
-                    const ax = event.accelerationIncludingGravity.x;
-                    const ay = event.accelerationIncludingGravity.y;
-                    const az = event.accelerationIncludingGravity.z;
-                    
-                    if(ax !== null) {
-                        document.getElementById('accel-status').innerText = "Aktif (Merekam)";
-                        document.getElementById('accel-status').className = "status-badge status-ok";
-                        
-                        // --- TAMBAHAN: Update UI Angka Sensor ---
-                        document.getElementById('accel-data').classList.remove('hidden');
-                        document.getElementById('accel-x').innerText = ax.toFixed(2);
-                        document.getElementById('accel-y').innerText = ay.toFixed(2);
-                        document.getElementById('accel-z').innerText = az.toFixed(2);
-                        // ----------------------------------------
+    // --- ACCELEROMETER TELEMETRY ---
+    function initAccelerometer() {
+        if (!window.DeviceMotionEvent) return;
 
-                        // Simpan sample ke memori lokal
-                        accelBatch.push({
-                            t: new Date().toISOString(),
-                            x: parseFloat(ax.toFixed(3)),
-                            y: parseFloat(ay.toFixed(3)),
-                            z: parseFloat(az.toFixed(3))
-                        });
-                    }
-                });
+        window.addEventListener('devicemotion', (event) => {
+            const ax = event.accelerationIncludingGravity.x;
+            const ay = event.accelerationIncludingGravity.y;
+            const az = event.accelerationIncludingGravity.z;
+            if (ax === null) return;
 
-                setInterval(() => {
-                    if (accelBatch.length > 0) {
-                        const samplesToSend = accelBatch.slice(0, 20); 
-                        accelBatch = accelBatch.slice(20); 
-                        
-                        apiCall("telemetry/accel", {
-                            device_id: DEVICE_ID,
-                            ts: new Date().toISOString(),
-                            samples: samplesToSend
-                        }).catch(e => console.error("Telemetry Accel gagal:", e));
-                    }
-                }, 5000);
+            document.getElementById('accel-x').textContent = ax.toFixed(2);
+            document.getElementById('accel-y').textContent = ay.toFixed(2);
+            document.getElementById('accel-z').textContent = az.toFixed(2);
 
-            } else {
-                document.getElementById('accel-status').innerText = "Tidak Didukung";
-            }
-        }
-    </script>
+            const badge = document.getElementById('accel-live-badge');
+            badge.className = "live-badge lb-on";
+            badge.innerHTML = `<span class="lb-dot"></span>LIVE`;
+
+            accelBatch.push({ t: new Date().toISOString(), x: parseFloat(ax.toFixed(3)), y: parseFloat(ay.toFixed(3)), z: parseFloat(az.toFixed(3)) });
+        });
+
+        setInterval(() => {
+            if (accelBatch.length === 0) return;
+            const samples = accelBatch.splice(0, 20);
+            apiCall("telemetry/accel", { device_id: DEVICE_ID, ts: new Date().toISOString(), samples });
+        }, 5000);
+    }
+</script>
 </body>
 </html>
