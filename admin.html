@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Presensi Cloud</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg-body: #f1f5f9; --bg-sidebar: #0f172a; --bg-panel: #ffffff; --primary: #3b82f6; --text-main: #334155; --border: #e2e8f0; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
@@ -178,7 +179,7 @@
         <div id="panel-sensor" class="tab-content hidden">
             <div class="panel">
                 <div class="panel-header">
-                    <h3>Pusat Pemantauan Accelerometer</h3>
+                    <h3>Pusat Pemantauan Accelerometer (Real-Time)</h3>
                 </div>
                 <div class="form-group">
                     <label>Masukkan Device ID Mahasiswa</label>
@@ -191,23 +192,27 @@
                 <div id="monitor-display" class="hidden" style="margin-top: 30px; padding: 25px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; text-align: center;">
                     <h4 style="margin-bottom: 20px; color: #334155;">Data Terkini: <span id="m-device-label" style="font-family: monospace; color:var(--primary)"></span></h4>
                     
-                    <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;">
+                    <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
                         <div style="background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 120px;">
-                            <span style="color:#64748b; font-size:0.85rem; display:block; margin-bottom: 5px;">Sumbu X (Kiri/Kanan)</span>
+                            <span style="color:#64748b; font-size:0.85rem; display:block; margin-bottom: 5px;">X (Kiri/Kanan)</span>
                             <strong id="m-x" style="color:#3b82f6; font-size: 1.5rem; font-family: monospace;">0.00</strong>
                         </div>
                         <div style="background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 120px;">
-                            <span style="color:#64748b; font-size:0.85rem; display:block; margin-bottom: 5px;">Sumbu Y (Maju/Mundur)</span>
+                            <span style="color:#64748b; font-size:0.85rem; display:block; margin-bottom: 5px;">Y (Maju/Mundur)</span>
                             <strong id="m-y" style="color:#10b981; font-size: 1.5rem; font-family: monospace;">0.00</strong>
                         </div>
                         <div style="background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 120px;">
-                            <span style="color:#64748b; font-size:0.85rem; display:block; margin-bottom: 5px;">Sumbu Z (Atas/Bawah)</span>
+                            <span style="color:#64748b; font-size:0.85rem; display:block; margin-bottom: 5px;">Z (Atas/Bawah)</span>
                             <strong id="m-z" style="color:#ef4444; font-size: 1.5rem; font-family: monospace;">0.00</strong>
                         </div>
                     </div>
                     
+                    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 100%;">
+                        <canvas id="accelChart" height="100"></canvas>
+                    </div>
+
                     <div style="margin-top: 20px; font-size: 0.85rem; color: #94a3b8;">
-                        Update terakhir dari server: <strong id="m-time" style="color: #475569;">-</strong>
+                        Update dari server: <strong id="m-time" style="color: #475569;">-</strong>
                     </div>
                 </div>
             </div>
@@ -228,7 +233,6 @@
             loadUsers(); 
         };
 
-        // --- SISTEM TAB / ROUTING FRONTEND ---
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.sidebar button').forEach(el => el.classList.remove('active'));
@@ -240,10 +244,7 @@
             if (tabName === 'courses') loadCourses();
             if (tabName === 'recap') loadCoursesForRecap();
             
-            // Matikan monitor otomatis jika admin pindah tab
-            if (tabName !== 'sensor' && isMonitoring) {
-                toggleMonitor();
-            }
+            if (tabName !== 'sensor' && isMonitoring) toggleMonitor();
         }
 
         function toggleSidebar() { document.querySelector('.sidebar').classList.toggle('show'); }
@@ -260,139 +261,50 @@
             window.location.href = "index.html";
         }
 
-        // --- MODUL 1: USER MANAGEMENT ---
-        function toggleNim() {
-            const role = document.getElementById('u-role').value;
-            const wrap = document.getElementById('u-nim-wrap');
-            const input = document.getElementById('u-nim');
-            if(role === 'mahasiswa') { wrap.classList.remove('hidden'); input.required = true; } 
-            else { wrap.classList.add('hidden'); input.required = false; input.value = ''; }
-        }
+        // --- MODUL 1 & 2 & 3: (KODE DIKECILKAN KARENA TIDAK BERUBAH) ---
+        function toggleNim() { const r=document.getElementById('u-role').value,w=document.getElementById('u-nim-wrap'),i=document.getElementById('u-nim');if(r==='mahasiswa'){w.classList.remove('hidden');i.required=true;}else{w.classList.add('hidden');i.required=false;i.value='';} }
+        document.getElementById('formUser').addEventListener('submit', async (e) => { e.preventDefault(); const p = { role: document.getElementById('u-role').value, name: document.getElementById('u-name').value, email: document.getElementById('u-email').value, password: document.getElementById('u-pass').value }; if(p.role==='mahasiswa') p.nim=document.getElementById('u-nim').value; const res = await apiCall("admin/add-user", p); if(res.ok) { showToast("User ditambahkan!"); e.target.reset(); toggleNim(); loadUsers(); } else showToast(res.error, "error"); });
+        async function loadUsers() { const tb=document.getElementById('tbl-users'); const res=await apiCall("admin/list-users"); if(res.ok){ tb.innerHTML=res.data.items.map(u=>`<tr><td style="font-family:monospace">${u.user_id}</td><td>${u.name}</td><td>${u.email}</td><td><strong style="text-transform:uppercase; font-size:0.8em">${u.role}</strong></td><td>${u.nim||'-'}</td><td><button class="btn btn-sm btn-danger" onclick="resetPass('${u.email}')">Reset Pass</button></td></tr>`).join(''); } else tb.innerHTML=`<tr><td colspan="6" style="color:red">Backend Error: ${res.error}</td></tr>`; }
+        async function resetPass(email) { const np=prompt(`Masukkan password baru untuk ${email}:`); if(!np)return; const res=await apiCall("admin/reset-password", {target_email:email,new_password:np}); if(res.ok)showToast("Password direset!"); else showToast(res.error,"error"); }
+        document.getElementById('formCourse').addEventListener('submit', async (e) => { e.preventDefault(); const res = await apiCall("courses/create", { course_id: document.getElementById('c-id').value, course_name: document.getElementById('c-name').value }); if(res.ok){ showToast("Mata Kuliah dibuat!"); e.target.reset(); loadCourses(); } else showToast(res.error, "error"); });
+        async function loadCourses() { const res=await apiCall("courses"); if(res.ok) document.getElementById('s-course').innerHTML='<option value="">Pilih Mata Kuliah...</option>'+res.data.items.map(c=>`<option value="${c.course_id}">${c.course_name}</option>`).join(''); }
+        document.getElementById('formSession').addEventListener('submit', async (e) => { e.preventDefault(); const res=await apiCall("sessions/create", { course_id: document.getElementById('s-course').value, date: document.getElementById('s-date').value, label: document.getElementById('s-label').value }); if(res.ok){showToast(`Sesi dibuat! ID: ${res.data.session_id}`);e.target.reset();}else showToast(res.error,"error");});
+        async function loadCoursesForRecap() { const res=await apiCall("courses"); if(res.ok) document.getElementById('r-course').innerHTML='<option value="">Pilih Mata Kuliah...</option>'+res.data.items.map(c=>`<option value="${c.course_id}">${c.course_name}</option>`).join(''); }
+        async function loadSessionsForRecap() { const id=document.getElementById('r-course').value; if(!id)return; const res=await apiCall("sessions",{course_id:id}); if(res.ok) document.getElementById('r-session').innerHTML=res.data.items.length===0?'<option value="">Belum ada sesi</option>':res.data.items.map(s=>`<option value="${s.session_id}">${s.label} (${s.date})</option>`).join(''); }
+        async function fetchRecap() { const id=document.getElementById('r-session').value; if(!id)return showToast("Pilih sesi!","error"); const tb=document.getElementById('tbl-recap'); tb.innerHTML=`<tr><td colspan="5" style="text-align:center;">Mengambil data...</td></tr>`; const res=await apiCall("presence/history/all",{session_id:id}); if(res.ok){ document.getElementById('recap-total').innerText=`Total Hadir: ${res.data.total_hadir}`; if(res.data.total_hadir===0){ tb.innerHTML=`<tr><td colspan="5" style="text-align:center;">Belum ada yang absen di sesi ini.</td></tr>`; return; } tb.innerHTML=res.data.items.map(i=>`<tr><td>${i.nim}</td><td>${i.nama}</td><td>${new Date(i.jam_checkin).toLocaleTimeString('id-ID')}</td><td style="font-family:monospace; color:var(--primary); font-size:0.85em;">${i.device_id}</td><td>${i.maps_url?`<a href="${i.maps_url}" target="_blank" style="color:var(--primary);">Buka Maps</a>`:'-'}</td></tr>`).join(''); } else tb.innerHTML=`<tr><td colspan="5" style="color:red; text-align:center;">${res.error}</td></tr>`; }
 
-        document.getElementById('formUser').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const payload = {
-                role: document.getElementById('u-role').value,
-                name: document.getElementById('u-name').value,
-                email: document.getElementById('u-email').value,
-                password: document.getElementById('u-pass').value,
-            };
-            if(payload.role === 'mahasiswa') payload.nim = document.getElementById('u-nim').value;
-
-            const res = await apiCall("admin/add-user", payload);
-            if(res.ok) { showToast("User ditambahkan!"); e.target.reset(); toggleNim(); loadUsers(); } 
-            else { showToast(res.error, "error"); }
-        });
-
-        async function loadUsers() {
-            const tbody = document.getElementById('tbl-users');
-            const res = await apiCall("admin/list-users");
-            if(res.ok) {
-                tbody.innerHTML = res.data.items.map(u => `
-                    <tr>
-                        <td style="font-family:monospace">${u.user_id}</td>
-                        <td>${u.name}</td><td>${u.email}</td>
-                        <td><strong style="text-transform:uppercase; font-size:0.8em">${u.role}</strong></td>
-                        <td>${u.nim || '-'}</td>
-                        <td><button class="btn btn-sm btn-danger" onclick="resetPass('${u.email}')">Reset Pass</button></td>
-                    </tr>
-                `).join('');
-            } else { tbody.innerHTML = `<tr><td colspan="6" style="color:red">Backend Error: ${res.error}</td></tr>`; }
-        }
-
-        async function resetPass(email) {
-            const newPass = prompt(`Masukkan password baru untuk ${email}:`);
-            if(!newPass) return;
-            const res = await apiCall("admin/reset-password", { target_email: email, new_password: newPass });
-            if(res.ok) showToast("Password direset!"); else showToast(res.error, "error");
-        }
-
-        // --- MODUL 2: COURSES & SESSIONS ---
-        document.getElementById('formCourse').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const res = await apiCall("courses/create", {
-                course_id: document.getElementById('c-id').value,
-                course_name: document.getElementById('c-name').value
-            });
-            if(res.ok) { showToast("Mata Kuliah dibuat!"); e.target.reset(); loadCourses(); }
-            else showToast(res.error, "error");
-        });
-
-        async function loadCourses() {
-            const res = await apiCall("courses");
-            if(res.ok) {
-                const selectOpts = '<option value="">Pilih Mata Kuliah...</option>' + res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
-                document.getElementById('s-course').innerHTML = selectOpts;
-            }
-        }
-
-        document.getElementById('formSession').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const res = await apiCall("sessions/create", {
-                course_id: document.getElementById('s-course').value,
-                date: document.getElementById('s-date').value,
-                label: document.getElementById('s-label').value
-            });
-            if(res.ok) { showToast(`Sesi dibuat! ID: ${res.data.session_id}`); e.target.reset(); }
-            else showToast(res.error, "error");
-        });
-
-        // --- MODUL 3: REKAP PRESENSI GLOBAL ---
-        async function loadCoursesForRecap() {
-            const res = await apiCall("courses");
-            if(res.ok) {
-                document.getElementById('r-course').innerHTML = '<option value="">Pilih Mata Kuliah...</option>' + 
-                    res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
-            }
-        }
-
-        async function loadSessionsForRecap() {
-            const courseId = document.getElementById('r-course').value;
-            if(!courseId) return;
-            const res = await apiCall("sessions", { course_id: courseId });
-            if(res.ok) {
-                document.getElementById('r-session').innerHTML = res.data.items.length === 0 ? '<option value="">Belum ada sesi</option>' :
-                    res.data.items.map(s => `<option value="${s.session_id}">${s.label} (${s.date})</option>`).join('');
-            }
-        }
-
-        async function fetchRecap() {
-            const sessionId = document.getElementById('r-session').value;
-            if(!sessionId) return showToast("Pilih sesi terlebih dahulu!", "error");
-
-            const tbody = document.getElementById('tbl-recap');
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Mengambil data...</td></tr>`;
-            
-            const res = await apiCall("presence/history/all", { session_id: sessionId });
-            if(res.ok) {
-                document.getElementById('recap-total').innerText = `Total Hadir: ${res.data.total_hadir}`;
-                if(res.data.total_hadir === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Belum ada yang absen di sesi ini.</td></tr>`;
-                    return;
-                }
-                tbody.innerHTML = res.data.items.map(i => `
-                    <tr>
-                        <td>${i.nim}</td>
-                        <td>${i.nama}</td>
-                        <td>${new Date(i.jam_checkin).toLocaleTimeString('id-ID')}</td>
-                        <td style="font-family:monospace; color:var(--primary); font-size:0.85em;">${i.device_id}</td> <td>${i.maps_url ? `<a href="${i.maps_url}" target="_blank" style="color:var(--primary);">Buka Maps</a>` : '-'}</td>
-                    </tr>
-                `).join('');
-            } else {
-                tbody.innerHTML = `<tr><td colspan="5" style="color:red; text-align:center;">${res.error}</td></tr>`;
-            }
-        }
-
-        // --- MODUL 4: MONITORING SENSOR REAL-TIME ---
+        // --- MODUL 4: MONITORING SENSOR GRAFIK (REAL-TIME) ---
         let monitorInterval;
         let isMonitoring = false;
+        let accelChart; // Instance Chart.js
+
+        // Inisialisasi Grafik Kosong
+        function initChart() {
+            const ctx = document.getElementById('accelChart').getContext('2d');
+            accelChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [], // Waktu
+                    datasets: [
+                        { label: 'Sumbu X', borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', data: [], tension: 0.3, fill: true },
+                        { label: 'Sumbu Y', borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', data: [], tension: 0.3, fill: true },
+                        { label: 'Sumbu Z', borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', data: [], tension: 0.3, fill: true }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    animation: false, // Animasi dimatikan agar update setiap 3 detik tidak lag
+                    scales: {
+                        x: { display: true, title: { display: true, text: 'Waktu' } },
+                        y: { display: true, title: { display: true, text: 'Akselerasi (m/s²)' }, min: -15, max: 15 } // Batas logis gravitasi
+                    }
+                }
+            });
+        }
 
         function toggleMonitor() {
             const deviceId = document.getElementById('monitor-device-id').value.trim();
-            if(!deviceId) {
-                showToast("Masukkan Device ID terlebih dahulu!", "error");
-                return;
-            }
+            if(!deviceId) return showToast("Masukkan Device ID terlebih dahulu!", "error");
 
             const btn = document.getElementById('btn-monitor');
             const display = document.getElementById('monitor-display');
@@ -411,7 +323,13 @@
                 display.classList.remove('hidden');
                 document.getElementById('m-device-label').innerText = deviceId;
                 
-                // Ambil data pertama kali, lalu ulang setiap 3 detik
+                // Siapkan Grafik
+                if (!accelChart) initChart();
+                accelChart.data.labels = []; // Kosongkan data lama
+                accelChart.data.datasets.forEach(ds => ds.data = []);
+                accelChart.update();
+
+                // Polling setiap 3 detik
                 fetchLatestAccel(deviceId);
                 monitorInterval = setInterval(() => fetchLatestAccel(deviceId), 3000); 
             }
@@ -422,14 +340,34 @@
             const timeEl = document.getElementById('m-time');
 
             if(res.ok) {
+                // Update Angka
                 document.getElementById('m-x').innerText = res.data.x.toFixed(2);
                 document.getElementById('m-y').innerText = res.data.y.toFixed(2);
                 document.getElementById('m-z').innerText = res.data.z.toFixed(2);
-                timeEl.innerText = new Date(res.data.t).toLocaleTimeString('id-ID');
-                timeEl.style.color = "#10b981"; // Hijau jika berhasil
+                
+                const timeLabel = new Date(res.data.t).toLocaleTimeString('id-ID');
+                timeEl.innerText = timeLabel;
+                timeEl.style.color = "#10b981"; 
+
+                // --- LOGIKA UPDATE GRAFIK (SCROLLING WINDOW) ---
+                // Jika titik lebih dari 15, buang data paling tua (kiri) agar grafik berjalan ke kiri
+                if (accelChart.data.labels.length > 15) {
+                    accelChart.data.labels.shift();
+                    accelChart.data.datasets[0].data.shift();
+                    accelChart.data.datasets[1].data.shift();
+                    accelChart.data.datasets[2].data.shift();
+                }
+                
+                // Tambahkan data baru ke kanan
+                accelChart.data.labels.push(timeLabel);
+                accelChart.data.datasets[0].data.push(res.data.x);
+                accelChart.data.datasets[1].data.push(res.data.y);
+                accelChart.data.datasets[2].data.push(res.data.z);
+                accelChart.update();
+
             } else {
                 timeEl.innerText = "Gagal mengambil data / Device tidak aktif";
-                timeEl.style.color = "#ef4444"; // Merah jika error
+                timeEl.style.color = "#ef4444"; 
             }
         }
     </script>
