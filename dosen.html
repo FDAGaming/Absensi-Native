@@ -239,7 +239,7 @@
     let countdownInterval;
     let monitorInterval, isMonitoring = false;
 
-    window.onload = () => {
+    window.onload = async () => {
         const role = localStorage.getItem("user_role");
         if (role !== "dosen" && role !== "admin") {
             alert("Akses Ditolak! Harap login sebagai Dosen.");
@@ -249,8 +249,18 @@
         const name = localStorage.getItem("user_name") || "dosen";
         document.getElementById('nav-username').textContent = name;
         document.getElementById('dash-name').textContent = name;
+        await loadCourses();
         loadDashboardStats();
     };
+
+    async function loadCourses() {
+        const res = await apiCall("courses");
+        if (!res.ok) return;
+        const opts = res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
+        const prefix = '<option value="">Pilih Mata Kuliah...</option>';
+        document.getElementById('qr-course').innerHTML = prefix + opts;
+        document.getElementById('r-course').innerHTML = prefix + opts;
+    }
 
     function switchTab(name) {
         document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
@@ -259,8 +269,8 @@
         const btn = document.getElementById(`nav-${name}`);
         if (btn) btn.classList.add('active');
 
-        if (name === 'qr') loadCoursesForQR();
-        if (name === 'recap') loadCoursesForRecap();
+        if (name === 'qr' && !document.getElementById('qr-course').options.length > 1) loadCourses();
+        if (name === 'recap' && !document.getElementById('r-course').options.length > 1) loadCourses();
         if (name !== 'accel' && isMonitoring) toggleMonitor();
     }
 
@@ -289,28 +299,20 @@
         document.getElementById('stat-matkul').textContent = courses.length;
 
         let totalSesi = 0, totalMhs = 0;
-        for (const c of courses) {
+        await Promise.all(courses.map(async c => {
             const sr = await apiCall("sessions", { course_id: c.course_id });
-            if (!sr.ok) continue;
+            if (!sr.ok) return;
             totalSesi += sr.data.items.length;
-            for (const s of sr.data.items) {
+            await Promise.all(sr.data.items.map(async s => {
                 const pr = await apiCall("presence/history/all", { session_id: s.session_id });
                 if (pr.ok) totalMhs += pr.data.total_hadir;
-            }
-        }
+            }));
+        }));
         document.getElementById('stat-sesi').textContent = totalSesi;
         document.getElementById('stat-mahasiswa').textContent = totalMhs;
     }
 
     // --- GENERATE QR ---
-    async function loadCoursesForQR() {
-        const res = await apiCall("courses");
-        if (res.ok) {
-            document.getElementById('qr-course').innerHTML = '<option value="">Pilih Mata Kuliah...</option>' +
-                res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
-        }
-    }
-
     async function loadSessionsForQR() {
         const courseId = document.getElementById('qr-course').value;
         if (!courseId) return;
@@ -377,14 +379,6 @@
     }
 
     // --- REKAP ---
-    async function loadCoursesForRecap() {
-        const res = await apiCall("courses");
-        if (res.ok) {
-            document.getElementById('r-course').innerHTML = '<option value="">Pilih Mata Kuliah...</option>' +
-                res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
-        }
-    }
-
     async function loadSessionsForRecap() {
         const courseId = document.getElementById('r-course').value;
         if (!courseId) return;
