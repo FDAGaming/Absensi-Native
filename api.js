@@ -1,9 +1,9 @@
 // api.js
 
 // Ganti dengan Deployment ID dari backend GAS Anda
-const BASE_URL = "https://script.google.com/macros/s/AKfycbwh-LlKtTZgYFwcW3sAGPlh032sdWE68UohWv1L1-53nsvYU0e7VvX7LZ1ARji2AR0Tqw/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbx85Sb45S4bQ4b_NQVxdizFIWJdah8A-Rqs8nrasFN_6PvLW7lcu7gqzDlSaVzpEC4mjw/exec";
 
-/**
+/**x    
  * Fungsi pembungkus terpusat untuk memanggil API GAS
  * @param {string} path - Routing endpoint (misal: 'auth/login')
  * @param {object} payloadData - Data body (tanpa perlu menyertakan path atau auth_token)
