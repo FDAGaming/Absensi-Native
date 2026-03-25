@@ -253,20 +253,27 @@
     let userLat = null, userLng = null, userAcc = null;
     let accelBatch = [];
 
-    window.onload = () => {
+    window.onload = async () => {
         if (localStorage.getItem("user_role") !== "mahasiswa") {
             alert("Akses Ditolak! Harap login sebagai Mahasiswa.");
             window.location.href = "index.html";
             return;
         }
         const name = localStorage.getItem("user_name") || "Mahasiswa";
-        const nim = localStorage.getItem("user_nim") || "-";
-
         document.getElementById('nav-username').textContent = name;
         document.getElementById('dash-name').textContent = name;
-        document.getElementById('dash-nim').textContent = nim;
         document.getElementById('dev-id-display').textContent = DEVICE_ID;
         document.getElementById('stat-device').textContent = DEVICE_ID.slice(-6);
+
+        // Ambil NIM dari backend karena tidak disimpan saat login
+        const profileRes = await apiCall("auth/me");
+        if (profileRes.ok) {
+            const nim = profileRes.data.nim || "-";
+            localStorage.setItem("user_nim", nim);
+            document.getElementById('dash-nim').textContent = nim;
+        } else {
+            document.getElementById('dash-nim').textContent = localStorage.getItem("user_nim") || "-";
+        }
 
         loadCourses();
         loadDashboardStats();
@@ -301,17 +308,15 @@
     // --- DASHBOARD STATS ---
     async function loadDashboardStats() {
         const res = await apiCall("courses");
-        if (res.ok) {
-            document.getElementById('stat-mk').textContent = res.data.items.length;
-        }
-        // Hitung total hadir dari semua course
+        if (!res.ok) return;
+        const courses = res.data.items;
+        document.getElementById('stat-mk').textContent = courses.length;
+
         let total = 0;
-        if (res.ok) {
-            await Promise.all(res.data.items.map(async c => {
-                const r = await apiCall("presence/history", { course_id: c.course_id });
-                if (r.ok) total += r.data.items.length;
-            }));
-        }
+        await Promise.all(courses.map(async c => {
+            const r = await apiCall("presence/history", { course_id: c.course_id });
+            if (r.ok) total += r.data.items.length;
+        }));
         document.getElementById('stat-hadir').textContent = total;
     }
 
@@ -397,7 +402,13 @@
 
     async function processCheckIn(token, courseId, sessionId) {
         showToast("Memproses presensi...");
-        const payload = { device_id: DEVICE_ID, course_id: courseId, session_id: sessionId, qr_token: token };
+        const payload = {
+            device_id: DEVICE_ID,
+            course_id: courseId,
+            session_id: sessionId,
+            qr_token: token,
+            ts: new Date().toISOString()
+        };
         if (userLat !== null) { payload.lat = userLat; payload.lng = userLng; payload.accuracy_m = userAcc; }
 
         const res = await apiCall("presence/checkin", payload);
@@ -423,7 +434,13 @@
         }
 
         alertEl.className = "alert";
-        const payload = { device_id: DEVICE_ID, course_id: courseId, session_id: sessionId, qr_token: token };
+        const payload = {
+            device_id: DEVICE_ID,
+            course_id: courseId,
+            session_id: sessionId,
+            qr_token: token,
+            ts: new Date().toISOString()
+        };
         if (userLat !== null) { payload.lat = userLat; payload.lng = userLng; payload.accuracy_m = userAcc; }
 
         const res = await apiCall("presence/checkin", payload);

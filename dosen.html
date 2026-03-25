@@ -279,21 +279,25 @@
     // --- DASHBOARD STATS ---
     async function loadDashboardStats() {
         const res = await apiCall("courses");
-        if (!res.ok) return;
+        if (!res.ok) {
+            document.getElementById('stat-matkul').textContent = '0';
+            document.getElementById('stat-sesi').textContent = '0';
+            document.getElementById('stat-mahasiswa').textContent = '0';
+            return;
+        }
         const courses = res.data.items;
         document.getElementById('stat-matkul').textContent = courses.length;
 
         let totalSesi = 0, totalMhs = 0;
-        await Promise.all(courses.map(async c => {
+        for (const c of courses) {
             const sr = await apiCall("sessions", { course_id: c.course_id });
-            if (sr.ok) {
-                totalSesi += sr.data.items.length;
-                await Promise.all(sr.data.items.map(async s => {
-                    const pr = await apiCall("presence/history/all", { session_id: s.session_id });
-                    if (pr.ok) totalMhs += pr.data.total_hadir;
-                }));
+            if (!sr.ok) continue;
+            totalSesi += sr.data.items.length;
+            for (const s of sr.data.items) {
+                const pr = await apiCall("presence/history/all", { session_id: s.session_id });
+                if (pr.ok) totalMhs += pr.data.total_hadir;
             }
-        }));
+        }
         document.getElementById('stat-sesi').textContent = totalSesi;
         document.getElementById('stat-mahasiswa').textContent = totalMhs;
     }
