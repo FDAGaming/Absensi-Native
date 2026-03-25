@@ -298,36 +298,74 @@
             <div id="panel-sensor" class="tab-panel">
                 <div class="card">
                     <div class="card-hd">
-                        <h2><div class="hd-icon">📡</div> Accelerometer</h2>
+                        <h2><div class="hd-icon">📡</div> Accelerometer Live</h2>
+                        <span id="accel-badge" class="live-badge lb-off"><span class="lb-dot"></span>OFF</span>
                     </div>
-                    <div class="fg">
-                        <label>Device ID Mahasiswa</label>
+                    <p class="mut" style="margin-bottom:14px;font-size:.84rem">Pantau data sensor accelerometer secara realtime dari perangkat Anda.</p>
+
+                    <div class="fg" style="margin-bottom:12px">
+                        <label>DEVICE ID</label>
                         <div style="display:flex;gap:10px">
-                            <input type="text" id="monitor-device-id" placeholder="mis: android-pixel7-001" style="flex:1">
-                            <button class="btn btn-primary" id="btn-monitor" onclick="toggleMonitor()">Mulai Pantau</button>
+                            <input type="text" id="monitor-device-id" placeholder="web-browser-01" style="flex:1">
+                            <button class="btn btn-green" id="btn-monitor" onclick="toggleMonitor()">▶ Mulai</button>
                         </div>
                     </div>
-                    <div id="monitor-display" style="display:none;margin-top:16px">
-                        <div class="accel-display">
-                            <div class="accel-axis ax-x">
-                                <div class="axis-label">Sumbu X</div>
-                                <div class="axis-val" id="m-x">0.00</div>
-                                <div class="axis-unit">m/s²</div>
-                            </div>
-                            <div class="accel-axis ax-y">
-                                <div class="axis-label">Sumbu Y</div>
-                                <div class="axis-val" id="m-y">0.00</div>
-                                <div class="axis-unit">m/s²</div>
-                            </div>
-                            <div class="accel-axis ax-z">
-                                <div class="axis-label">Sumbu Z</div>
-                                <div class="axis-val" id="m-z">0.00</div>
-                                <div class="axis-unit">m/s²</div>
-                            </div>
+
+                    <!-- 3 Axis Cards -->
+                    <div class="accel-display" style="margin-bottom:12px">
+                        <div class="accel-axis ax-x">
+                            <div class="axis-label">X-AXIS</div>
+                            <div class="axis-val" id="m-x">0.000</div>
+                            <div class="axis-unit">m/s²</div>
                         </div>
-                        <div style="font-size:.8rem;color:var(--txt3);text-align:center">
-                            Update terakhir: <strong id="m-time" style="color:var(--txt2)">-</strong>
+                        <div class="accel-axis ax-y">
+                            <div class="axis-label">Y-AXIS</div>
+                            <div class="axis-val" id="m-y">0.000</div>
+                            <div class="axis-unit">m/s²</div>
                         </div>
+                        <div class="accel-axis ax-z">
+                            <div class="axis-label">Z-AXIS</div>
+                            <div class="axis-val" id="m-z">9.810</div>
+                            <div class="axis-unit">m/s²</div>
+                        </div>
+                    </div>
+
+                    <!-- Magnitude + Sumber -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+                        <div class="accel-axis" style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:14px;text-align:center">
+                            <div class="axis-label">MAGNITUDE</div>
+                            <div class="axis-val" id="m-magnitude">0.000</div>
+                            <div class="axis-unit">m/s²</div>
+                        </div>
+                        <div class="accel-axis" style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:14px;text-align:center">
+                            <div class="axis-label">SUMBER</div>
+                            <div class="axis-val" id="m-source" style="font-size:1rem;color:var(--txt3)">-</div>
+                            <div class="axis-unit">sensor</div>
+                        </div>
+                    </div>
+
+                    <!-- Graf Realtime -->
+                    <div class="accel-chart-wrap">
+                        <div class="accel-chart-title">📈 GRAF REALTIME (30 TITIK TERAKHIR)</div>
+                        <canvas id="accel-canvas" height="120"></canvas>
+                    </div>
+
+                    <p class="mut" style="font-size:.75rem;margin-top:10px;text-align:center">
+                        ℹ️ Buka via HTTPS atau localhost agar sensor HP dapat diakses browser
+                    </p>
+                </div>
+
+                <!-- Kirim & Ambil Data Server -->
+                <div class="card" style="margin-top:14px">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">📡</div> Kirim & Ambil Data Server</h2>
+                        <button class="btn btn-outline btn-sm" onclick="loadAccelHistory()">Refresh</button>
+                    </div>
+                    <div class="tbl-wrap">
+                        <table>
+                            <thead><tr><th>Waktu</th><th>X</th><th>Y</th><th>Z</th><th>Magnitude</th></tr></thead>
+                            <tbody id="tbl-accel-history"><tr><td colspan="5" class="empty">Mulai pantau untuk melihat data server</td></tr></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -677,39 +715,110 @@
     // --- SENSOR ---
     let monitorInterval, isMonitoring = false;
     let gpsInterval, isGpsMonitoring = false;
+    const accelHistory = { x: [], y: [], z: [] };
+    const MAX_POINTS = 30;
 
     function toggleMonitor() {
         const deviceId = document.getElementById('monitor-device-id').value.trim();
         if (!deviceId) return showToast("Masukkan Device ID!", "error");
         const btn = document.getElementById('btn-monitor');
-        const display = document.getElementById('monitor-display');
+        const badge = document.getElementById('accel-badge');
         if (isMonitoring) {
             clearInterval(monitorInterval);
             isMonitoring = false;
-            btn.textContent = "Mulai Pantau";
-            btn.className = "btn btn-primary";
+            btn.innerHTML = '▶ Mulai';
+            btn.className = "btn btn-green";
+            badge.className = "live-badge lb-off";
+            badge.innerHTML = `<span class="lb-dot"></span>OFF`;
         } else {
             isMonitoring = true;
-            btn.textContent = "Hentikan";
+            btn.innerHTML = '⏹ Stop';
             btn.className = "btn btn-red";
-            display.style.display = '';
+            badge.className = "live-badge lb-on";
+            badge.innerHTML = `<span class="lb-dot"></span>LIVE`;
             fetchLatestAccel(deviceId);
             monitorInterval = setInterval(() => fetchLatestAccel(deviceId), 3000);
+            loadAccelHistory(deviceId);
         }
     }
 
     async function fetchLatestAccel(deviceId) {
         const res = await apiCall("telemetry/accel/latest", { device_id: deviceId });
-        const timeEl = document.getElementById('m-time');
         if (res.ok) {
-            document.getElementById('m-x').textContent = res.data.x.toFixed(2);
-            document.getElementById('m-y').textContent = res.data.y.toFixed(2);
-            document.getElementById('m-z').textContent = res.data.z.toFixed(2);
-            timeEl.textContent = new Date(res.data.t).toLocaleTimeString('id-ID');
-            timeEl.style.color = "var(--grn2)";
+            const x = res.data.x, y = res.data.y, z = res.data.z;
+            document.getElementById('m-x').textContent = x.toFixed(3);
+            document.getElementById('m-y').textContent = y.toFixed(3);
+            document.getElementById('m-z').textContent = z.toFixed(3);
+            const mag = Math.sqrt(x*x + y*y + z*z);
+            document.getElementById('m-magnitude').textContent = mag.toFixed(3);
+            document.getElementById('m-source').textContent = res.data.source || 'server';
+
+            // Update graf
+            accelHistory.x.push(x); accelHistory.y.push(y); accelHistory.z.push(z);
+            if (accelHistory.x.length > MAX_POINTS) { accelHistory.x.shift(); accelHistory.y.shift(); accelHistory.z.shift(); }
+            drawAccelChart();
         } else {
-            timeEl.textContent = "Gagal / Device tidak aktif";
-            timeEl.style.color = "var(--red)";
+            document.getElementById('m-source').textContent = 'offline';
+        }
+    }
+
+    function drawAccelChart() {
+        const canvas = document.getElementById('accel-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.offsetWidth, H = 120;
+        canvas.width = W; canvas.height = H;
+        ctx.clearRect(0, 0, W, H);
+
+        const allVals = [...accelHistory.x, ...accelHistory.y, ...accelHistory.z];
+        const minV = Math.min(...allVals, -1), maxV = Math.max(...allVals, 1);
+        const range = maxV - minV || 1;
+
+        const toY = v => H - ((v - minV) / range) * (H - 16) - 8;
+        const toX = (i, len) => (i / (MAX_POINTS - 1)) * (W - 8) + 4;
+
+        const drawLine = (data, color) => {
+            if (data.length < 2) return;
+            ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+            data.forEach((v, i) => i === 0 ? ctx.moveTo(toX(i, data.length), toY(v)) : ctx.lineTo(toX(i, data.length), toY(v)));
+            ctx.stroke();
+        };
+
+        // Grid line tengah
+        ctx.beginPath(); ctx.strokeStyle = 'rgba(0,0,0,.06)'; ctx.lineWidth = 1;
+        ctx.moveTo(0, toY(0)); ctx.lineTo(W, toY(0)); ctx.stroke();
+
+        drawLine(accelHistory.x, '#4361ee');
+        drawLine(accelHistory.y, '#06d6a0');
+        drawLine(accelHistory.z, '#f4a261');
+
+        // Legend
+        ctx.font = '10px monospace';
+        [['X', '#4361ee', 8], ['Y', '#06d6a0', 38], ['Z', '#f4a261', 68]].forEach(([l, c, ox]) => {
+            ctx.fillStyle = c; ctx.fillRect(ox, 4, 10, 3);
+            ctx.fillStyle = '#8891ab'; ctx.fillText(l, ox + 13, 11);
+        });
+    }
+
+    async function loadAccelHistory(deviceId) {
+        deviceId = deviceId || document.getElementById('monitor-device-id').value.trim();
+        if (!deviceId) return;
+        const tbody = document.getElementById('tbl-accel-history');
+        tbody.innerHTML = `<tr><td colspan="5" class="empty">Memuat...</td></tr>`;
+        const res = await apiCall("telemetry/accel/history", { device_id: deviceId });
+        if (res.ok && res.data.items && res.data.items.length > 0) {
+            tbody.innerHTML = res.data.items.slice(0, 20).map(i => {
+                const mag = Math.sqrt(i.x*i.x + i.y*i.y + i.z*i.z);
+                return `<tr>
+                    <td style="font-family:var(--mono);font-size:.78rem">${new Date(i.t).toLocaleString('id-ID')}</td>
+                    <td style="font-family:var(--mono);color:var(--ind)">${parseFloat(i.x).toFixed(3)}</td>
+                    <td style="font-family:var(--mono);color:var(--grn2)">${parseFloat(i.y).toFixed(3)}</td>
+                    <td style="font-family:var(--mono);color:#c05621">${parseFloat(i.z).toFixed(3)}</td>
+                    <td style="font-family:var(--mono)">${mag.toFixed(3)}</td>
+                </tr>`;
+            }).join('');
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty">Belum ada data dari server</td></tr>`;
         }
     }
 
