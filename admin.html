@@ -1,87 +1,437 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Admin - PresensiQR</title>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Presensi Cloud</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-body: #f1f5f9; --bg-sidebar: #0f172a; --bg-panel: #ffffff; --primary: #3b82f6; --text-main: #334155; --border: #e2e8f0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { display: flex; height: 100vh; background-color: var(--bg-body); color: var(--text-main); }
+        
+        .sidebar { width: 260px; background: var(--bg-sidebar); color: #f8fafc; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 24px; border-bottom: 1px solid #1e293b; }
+        .sidebar-menu { padding: 12px; flex: 1; }
+        .sidebar button { width: 100%; padding: 12px 16px; margin-bottom: 8px; text-align: left; background: transparent; color: #cbd5e1; border: none; cursor: pointer; border-radius: 8px; font-weight: 500; transition: 0.2s; }
+        .sidebar button:hover, .sidebar button.active { background: #1e293b; color: white; }
+        .sidebar-footer { padding: 20px; border-top: 1px solid #1e293b; }
+        .btn-logout { color: #fca5a5 !important; }
+        
+        .content { flex: 1; padding: 30px 40px; overflow-y: auto; }
+        .panel { background: var(--bg-panel); padding: 24px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        h3 { font-size: 1.15rem; color: #0f172a; }
+        
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.85rem; font-weight: 500; }
+        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; background: var(--primary); color: white; }
+        .btn-sm { padding: 6px 10px; font-size: 0.8rem; background: #64748b; }
+        .btn-danger { background: #ef4444 !important; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: #f8fafc; font-weight: 600; }
+        
+        .hidden { display: none !important; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 15px 20px; border-radius: 8px; color: white; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
+        .toast-success { background: #10b981; }
+        .toast-error { background: #ef4444; }
+
+        /* Mobile */
+        .mobile-header { display: none; background: var(--bg-sidebar); color: white; padding: 15px 20px; align-items: center; justify-content: space-between; z-index: 20; }
+        .mobile-toggle { background: transparent; color: white; border: none; font-size: 1.5rem; cursor: pointer; }
+        .table-wrap { overflow-x: auto; width: 100%; border-radius: 8px; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .mobile-header { display: flex; }
+            .sidebar { position: fixed; left: -260px; top: 0; bottom: 0; z-index: 50; transition: 0.3s ease-in-out; }
+            .sidebar.show { left: 0; }
+            .content { padding: 15px; width: 100%; }
+        }
+    </style>
 </head>
 <body>
-<nav>
-  <div class="nav-brand"><div class="nav-logo">🎓</div><div><div class="nav-title">Presensi<span>QR</span></div><div class="nav-sub">Panel Admin</div></div></div>
-  <div class="nav-r" id="nav-user"><span class="nav-name" id="nav-name"></span><span class="role-pill" id="nav-chip"></span><button class="btn-nav" onclick="logout()">Keluar</button></div>
-</nav>
 
-<div class="wrap"><div class="layout">
-  <div class="sidebar" id="sidebar">
-    <button class="sb-btn active" onclick="switchTab('dash', this)"><div class="sb-icon">🏠</div>Dashboard</button>
-    <div class="sb-sep">Manajemen</div>
-    <button class="sb-btn" onclick="switchTab('admin-users', this); loadUserList()"><div class="sb-icon">👤</div>Kelola User</button>
-    <button class="sb-btn" onclick="switchTab('setup', this); loadSetup()"><div class="sb-icon">⚙️</div>Setup Kelas</button>
-    <div class="sb-sep">Monitoring</div>
-    <button class="sb-btn" onclick="switchTab('history-all', this); loadHaCourses()"><div class="sb-icon">📋</div>Rekap Presensi</button>
-    <button class="sb-btn" onclick="switchTab('gps', this); initGpsPanel()"><div class="sb-icon">🗺️</div>GPS Tracking</button>
-  </div>
-
-  <div id="content">
-    <div class="tab-panel active" id="panel-dash">
-      <div class="card"><div class="card-hd"><h2><div class="hd-icon">🏠</div>Dashboard</h2></div><p class="mut">Selamat datang, Admin.</p></div>
+    <div class="mobile-header">
+        <h2>Admin Panel</h2>
+        <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
     </div>
-    
-    <div class="tab-panel" id="panel-admin-users">
-      <div class="card">
-        <div class="card-hd"><h2><div class="hd-icon">👤</div>Kelola User</h2></div>
-        <div class="row2">
-          <div>
-            <div class="fg"><label>Nama</label><input id="au-name" placeholder="Nama lengkap"></div>
-            <div class="fg"><label>Email</label><input id="au-email" type="email"></div>
-            <div class="fg"><label>Password</label><input id="au-pw" type="password"></div>
-            <div class="fg"><label>Role</label><select id="au-role" onchange="document.getElementById('au-nim-wrap').style.display=this.value==='mahasiswa'?'block':'none'"><option value="">— Pilih —</option><option value="mahasiswa">Mahasiswa</option><option value="dosen">Dosen</option><option value="admin">Admin</option></select></div>
-            <div id="au-nim-wrap" class="fg" style="display:none"><label>NIM</label><input id="au-nim"></div>
-            <button class="btn btn-primary btn-full" onclick="doAddUser()"><span class="aus"></span>Tambah User</button>
-            <div class="alert" id="au-alert"></div>
-          </div>
-          <div>
-            <div class="fg"><label>Filter Role</label><select id="ul-filter" onchange="loadUserList()"><option value="">Semua Role</option><option value="admin">Admin</option><option value="dosen">Dosen</option><option value="mahasiswa">Mahasiswa</option></select></div>
-            <button class="btn btn-outline btn-full" onclick="loadUserList()">⟳ Refresh Data</button>
-          </div>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Panel Admin</h2>
         </div>
-        <hr class="divider">
-        <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Nama</th><th>Email</th><th>Role</th><th>NIM</th></tr></thead><tbody id="user-list-tbody"><tr><td colspan="5" class="empty">Loading...</td></tr></tbody></table></div>
-      </div>
+        <div class="sidebar-menu">
+            <button class="active" id="nav-users" onclick="switchTab('users')">Manajemen User</button>
+            <button id="nav-courses" onclick="switchTab('courses')">Mata Kuliah & Sesi</button>
+            <button id="nav-recap" onclick="switchTab('recap')">Rekap Presensi</button>
+            <button id="nav-sensor" onclick="switchTab('sensor')">Monitoring Sensor</button>
+        </div>
+        <div class="sidebar-footer">
+            <button class="btn-logout" onclick="logout()">Log Out</button>
+        </div>
     </div>
 
+    <div class="content">
+        <div id="toast" class="toast hidden"></div>
+
+        <div id="panel-users" class="tab-content">
+            <div class="panel">
+                <div class="panel-header"><h3>Tambah User Baru</h3></div>
+                <form id="formUser">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Role</label>
+                            <select id="u-role" required onchange="toggleNim()">
+                                <option value="dosen">Dosen</option>
+                                <option value="mahasiswa">Mahasiswa</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Nama Lengkap</label><input type="text" id="u-name" required></div>
+                        <div class="form-group"><label>Email</label><input type="email" id="u-email" required></div>
+                        <div class="form-group"><label>Password</label><input type="password" id="u-pass" required></div>
+                        <div class="form-group hidden" id="u-nim-wrap"><label>NIM</label><input type="text" id="u-nim"></div>
+                    </div>
+                    <button type="submit" class="btn" id="btn-submit-user">Simpan User</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Daftar User</h3>
+                    <button class="btn btn-sm" onclick="loadUsers()">Refresh</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>ID</th><th>Nama</th><th>Email</th><th>Role</th><th>NIM</th><th>Aksi</th></tr></thead>
+                        <tbody id="tbl-users"><tr><td colspan="6">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-courses" class="tab-content hidden">
+            <div class="panel">
+                <div class="panel-header"><h3>Buat Mata Kuliah Baru</h3></div>
+                <form id="formCourse">
+                    <div class="form-grid">
+                        <div class="form-group"><label>Course ID (Slug)</label><input type="text" id="c-id" placeholder="mis: cloud-101" required></div>
+                        <div class="form-group"><label>Nama Mata Kuliah</label><input type="text" id="c-name" placeholder="Praktik Komputasi Awan" required></div>
+                    </div>
+                    <button type="submit" class="btn">Buat Mata Kuliah</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header"><h3>Buat Sesi Pertemuan</h3></div>
+                <form id="formSession">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Pilih Mata Kuliah</label>
+                            <select id="s-course" required><option value="">Loading courses...</option></select>
+                        </div>
+                        <div class="form-group"><label>Tanggal</label><input type="date" id="s-date" required></div>
+                        <div class="form-group"><label>Label Sesi</label><input type="text" id="s-label" placeholder="Pertemuan 1" required></div>
+                    </div>
+                    <button type="submit" class="btn">Buat Sesi</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="panel-recap" class="tab-content hidden">
+            <div class="panel">
+                <div class="panel-header"><h3>Lihat Rekap Presensi</h3></div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Pilih Mata Kuliah</label>
+                        <select id="r-course" onchange="loadSessionsForRecap()"><option value="">Pilih...</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pilih Sesi</label>
+                        <select id="r-session"><option value="">Pilih Course dulu...</option></select>
+                    </div>
+                    <div class="form-group" style="display:flex; align-items:flex-end;">
+                        <button class="btn" onclick="fetchRecap()" style="width:100%">Tampilkan Rekap</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Data Kehadiran</h3>
+                    <span id="recap-total" style="font-weight:bold; color:var(--primary);">Total Hadir: 0</span>
+                </div>
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">*Salin Device ID untuk digunakan di menu Monitoring Sensor.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>NIM</th><th>Nama Mahasiswa</th><th>Jam Check-in</th><th>Device ID</th><th>Lokasi GPS</th></tr></thead>
+                        <tbody id="tbl-recap"><tr><td colspan="5" style="text-align:center;">Pilih sesi dan klik Tampilkan Rekap</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-sensor" class="tab-content hidden">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Pusat Pemantauan Accelerometer</h3>
+                </div>
+                <div class="form-group">
+                    <label>Masukkan Device ID Mahasiswa</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="monitor-device-id" placeholder="Salin dari tabel Rekap (mis: android-pixel7-001)" style="flex: 1;">
+                        <button class="btn" id="btn-monitor" onclick="toggleMonitor()">Mulai Pantau</button>
+                    </div>
+                </div>
+                
+                <div id="monitor-display" class="hidden" style="margin-top: 30px; padding: 25px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; text-align: center;">
+                    <h4 style="margin-bottom: 20px; color: #334155;">Data Terkini: <span id="m-device-label" style="font-family: monospace; color:var(--primary)"></span></h4>
+                    
+                    <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;">
+                        <div style="background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 120px;">
+                            <span style="color:#64748b; font-size:0.85rem; display:block; margin-bottom: 5px;">Sumbu X (Kiri/Kanan)</span>
+                            <strong id="m-x" style="color:#3b82f6; font-size: 1.5rem; font-family: monospace;">0.00</strong>
+                        </div>
+                        <div style="background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 120px;">
+                            <span style="color:#64748b; font-size:0.85rem; display:block; margin-bottom: 5px;">Sumbu Y (Maju/Mundur)</span>
+                            <strong id="m-y" style="color:#10b981; font-size: 1.5rem; font-family: monospace;">0.00</strong>
+                        </div>
+                        <div style="background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-width: 120px;">
+                            <span style="color:#64748b; font-size:0.85rem; display:block; margin-bottom: 5px;">Sumbu Z (Atas/Bawah)</span>
+                            <strong id="m-z" style="color:#ef4444; font-size: 1.5rem; font-family: monospace;">0.00</strong>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; font-size: 0.85rem; color: #94a3b8;">
+                        Update terakhir dari server: <strong id="m-time" style="color: #475569;">-</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
-</div></div>
 
-<script src="api.js"></script>
-<script>
-const S = checkAuth("admin");
-function switchTab(id, btn) {
-  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".sb-btn").forEach(b => b.classList.remove("active"));
-  $("panel-" + id).classList.add("active"); btn.classList.add("active");
-  setTimeout(() => Object.values(MAPS).forEach(m => { try { m.invalidateSize(); } catch(e){} }), 120);
-}
+    <script src="api.js"></script>
 
-async function doAddUser() {
-  const name=_v("au-name"),email=_v("au-email"),password=_v("au-pw"),role=$("au-role").value,nim=_v("au-nim");
-  if(!name||!email||!password||!role)return showAlert("au-alert","Semua field wajib.");
-  setSpin("aus",true); const r=await api("admin/add-user",{name,email,password,role,nim}); setSpin("aus",false);
-  if(!r.ok)return showAlert("au-alert",r.error);
-  showAlert("au-alert",`✅ ${r.data.name} ditambahkan.`,"ok");
-  ["au-name","au-email","au-pw","au-nim"].forEach(id=>$(id)&&($(id).value="")); loadUserList();
-}
+    <script>
+        // --- INISIALISASI VALIDASI LOGIN ---
+        window.onload = () => {
+            if (localStorage.getItem("user_role") !== "admin") {
+                alert("Akses Ditolak! Harap login sebagai Admin terlebih dahulu.");
+                window.location.href = "index.html"; 
+                return;
+            }
+            loadUsers(); 
+        };
 
-async function loadUserList() {
-  const role=$("ul-filter").value; const r=await api("admin/list-users",role?{role}:{}); if(!r.ok)return;
-  $("user-list-tbody").innerHTML=(r.data.items||[]).length===0 ? '<tr><td colspan="5" class="empty">Tidak ada user</td></tr>'
-    : (r.data.items||[]).map((u,i)=>`<tr><td>${i+1}</td><td><strong>${u.name}</strong></td><td>${u.email}</td><td><span class="badge b-adm">${u.role}</span></td><td><code>${u.nim||"-"}</code></td></tr>`).join("");
-}
-// Tambahkan loadSetup(), loadHaCourses(), loadHistoryAll() di sini (sama persis dengan kode SPA sebelumnya).
-</script>
+        // --- SISTEM TAB / ROUTING FRONTEND ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.sidebar button').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`panel-${tabName}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabName}`).classList.add('active');
+
+            if (tabName === 'users') loadUsers();
+            if (tabName === 'courses') loadCourses();
+            if (tabName === 'recap') loadCoursesForRecap();
+            
+            // Matikan monitor otomatis jika admin pindah tab
+            if (tabName !== 'sensor' && isMonitoring) {
+                toggleMonitor();
+            }
+        }
+
+        function toggleSidebar() { document.querySelector('.sidebar').classList.toggle('show'); }
+
+        function showToast(msg, type = "success") {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.className = `toast toast-${type}`;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 4000);
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "index.html";
+        }
+
+        // --- MODUL 1: USER MANAGEMENT ---
+        function toggleNim() {
+            const role = document.getElementById('u-role').value;
+            const wrap = document.getElementById('u-nim-wrap');
+            const input = document.getElementById('u-nim');
+            if(role === 'mahasiswa') { wrap.classList.remove('hidden'); input.required = true; } 
+            else { wrap.classList.add('hidden'); input.required = false; input.value = ''; }
+        }
+
+        document.getElementById('formUser').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                role: document.getElementById('u-role').value,
+                name: document.getElementById('u-name').value,
+                email: document.getElementById('u-email').value,
+                password: document.getElementById('u-pass').value,
+            };
+            if(payload.role === 'mahasiswa') payload.nim = document.getElementById('u-nim').value;
+
+            const res = await apiCall("admin/add-user", payload);
+            if(res.ok) { showToast("User ditambahkan!"); e.target.reset(); toggleNim(); loadUsers(); } 
+            else { showToast(res.error, "error"); }
+        });
+
+        async function loadUsers() {
+            const tbody = document.getElementById('tbl-users');
+            const res = await apiCall("admin/list-users");
+            if(res.ok) {
+                tbody.innerHTML = res.data.items.map(u => `
+                    <tr>
+                        <td style="font-family:monospace">${u.user_id}</td>
+                        <td>${u.name}</td><td>${u.email}</td>
+                        <td><strong style="text-transform:uppercase; font-size:0.8em">${u.role}</strong></td>
+                        <td>${u.nim || '-'}</td>
+                        <td><button class="btn btn-sm btn-danger" onclick="resetPass('${u.email}')">Reset Pass</button></td>
+                    </tr>
+                `).join('');
+            } else { tbody.innerHTML = `<tr><td colspan="6" style="color:red">Backend Error: ${res.error}</td></tr>`; }
+        }
+
+        async function resetPass(email) {
+            const newPass = prompt(`Masukkan password baru untuk ${email}:`);
+            if(!newPass) return;
+            const res = await apiCall("admin/reset-password", { target_email: email, new_password: newPass });
+            if(res.ok) showToast("Password direset!"); else showToast(res.error, "error");
+        }
+
+        // --- MODUL 2: COURSES & SESSIONS ---
+        document.getElementById('formCourse').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await apiCall("courses/create", {
+                course_id: document.getElementById('c-id').value,
+                course_name: document.getElementById('c-name').value
+            });
+            if(res.ok) { showToast("Mata Kuliah dibuat!"); e.target.reset(); loadCourses(); }
+            else showToast(res.error, "error");
+        });
+
+        async function loadCourses() {
+            const res = await apiCall("courses");
+            if(res.ok) {
+                const selectOpts = '<option value="">Pilih Mata Kuliah...</option>' + res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
+                document.getElementById('s-course').innerHTML = selectOpts;
+            }
+        }
+
+        document.getElementById('formSession').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const res = await apiCall("sessions/create", {
+                course_id: document.getElementById('s-course').value,
+                date: document.getElementById('s-date').value,
+                label: document.getElementById('s-label').value
+            });
+            if(res.ok) { showToast(`Sesi dibuat! ID: ${res.data.session_id}`); e.target.reset(); }
+            else showToast(res.error, "error");
+        });
+
+        // --- MODUL 3: REKAP PRESENSI GLOBAL ---
+        async function loadCoursesForRecap() {
+            const res = await apiCall("courses");
+            if(res.ok) {
+                document.getElementById('r-course').innerHTML = '<option value="">Pilih Mata Kuliah...</option>' + 
+                    res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
+            }
+        }
+
+        async function loadSessionsForRecap() {
+            const courseId = document.getElementById('r-course').value;
+            if(!courseId) return;
+            const res = await apiCall("sessions", { course_id: courseId });
+            if(res.ok) {
+                document.getElementById('r-session').innerHTML = res.data.items.length === 0 ? '<option value="">Belum ada sesi</option>' :
+                    res.data.items.map(s => `<option value="${s.session_id}">${s.label} (${s.date})</option>`).join('');
+            }
+        }
+
+        async function fetchRecap() {
+            const sessionId = document.getElementById('r-session').value;
+            if(!sessionId) return showToast("Pilih sesi terlebih dahulu!", "error");
+
+            const tbody = document.getElementById('tbl-recap');
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Mengambil data...</td></tr>`;
+            
+            const res = await apiCall("presence/history/all", { session_id: sessionId });
+            if(res.ok) {
+                document.getElementById('recap-total').innerText = `Total Hadir: ${res.data.total_hadir}`;
+                if(res.data.total_hadir === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Belum ada yang absen di sesi ini.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = res.data.items.map(i => `
+                    <tr>
+                        <td>${i.nim}</td>
+                        <td>${i.nama}</td>
+                        <td>${new Date(i.jam_checkin).toLocaleTimeString('id-ID')}</td>
+                        <td style="font-family:monospace; color:var(--primary); font-size:0.85em;">${i.device_id}</td> <td>${i.maps_url ? `<a href="${i.maps_url}" target="_blank" style="color:var(--primary);">Buka Maps</a>` : '-'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5" style="color:red; text-align:center;">${res.error}</td></tr>`;
+            }
+        }
+
+        // --- MODUL 4: MONITORING SENSOR REAL-TIME ---
+        let monitorInterval;
+        let isMonitoring = false;
+
+        function toggleMonitor() {
+            const deviceId = document.getElementById('monitor-device-id').value.trim();
+            if(!deviceId) {
+                showToast("Masukkan Device ID terlebih dahulu!", "error");
+                return;
+            }
+
+            const btn = document.getElementById('btn-monitor');
+            const display = document.getElementById('monitor-display');
+
+            if(isMonitoring) {
+                // Hentikan Polling
+                clearInterval(monitorInterval);
+                isMonitoring = false;
+                btn.innerText = "Mulai Pantau";
+                btn.classList.remove('btn-danger');
+            } else {
+                // Mulai Polling
+                isMonitoring = true;
+                btn.innerText = "Hentikan Pantauan";
+                btn.classList.add('btn-danger');
+                display.classList.remove('hidden');
+                document.getElementById('m-device-label').innerText = deviceId;
+                
+                // Ambil data pertama kali, lalu ulang setiap 3 detik
+                fetchLatestAccel(deviceId);
+                monitorInterval = setInterval(() => fetchLatestAccel(deviceId), 3000); 
+            }
+        }
+
+        async function fetchLatestAccel(deviceId) {
+            const res = await apiCall("telemetry/accel/latest", { device_id: deviceId });
+            const timeEl = document.getElementById('m-time');
+
+            if(res.ok) {
+                document.getElementById('m-x').innerText = res.data.x.toFixed(2);
+                document.getElementById('m-y').innerText = res.data.y.toFixed(2);
+                document.getElementById('m-z').innerText = res.data.z.toFixed(2);
+                timeEl.innerText = new Date(res.data.t).toLocaleTimeString('id-ID');
+                timeEl.style.color = "#10b981"; // Hijau jika berhasil
+            } else {
+                timeEl.innerText = "Gagal mengambil data / Device tidak aktif";
+                timeEl.style.color = "#ef4444"; // Merah jika error
+            }
+        }
+    </script>
 </body>
 </html>

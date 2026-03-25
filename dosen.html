@@ -1,42 +1,300 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Dosen - PresensiQR</title>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Dosen - Presensi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-body: #f1f5f9; --bg-sidebar: #1e1b4b; --bg-panel: #ffffff; --primary: #4f46e5; --text-main: #334155; --border: #e2e8f0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { display: flex; height: 100vh; background-color: var(--bg-body); color: var(--text-main); }
+        
+        .sidebar { width: 260px; background: var(--bg-sidebar); color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-menu { padding: 12px; flex: 1; }
+        .sidebar button { width: 100%; padding: 12px 16px; margin-bottom: 8px; text-align: left; background: transparent; color: #cbd5e1; border: none; cursor: pointer; border-radius: 8px; font-weight: 500; transition: 0.2s; }
+        .sidebar button:hover, .sidebar button.active { background: rgba(255,255,255,0.1); color: white; }
+        .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .btn-logout { color: #fca5a5 !important; }
+        
+        .content { flex: 1; padding: 30px 40px; overflow-y: auto; }
+        .panel { background: var(--bg-panel); padding: 24px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        h3 { font-size: 1.15rem; color: #0f172a; }
+        
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; font-size: 0.85rem; font-weight: 500; }
+        select, input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; }
+        .btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; background: var(--primary); color: white; transition: 0.2s; }
+        .btn:hover { background: #4338ca; }
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: #f8fafc; font-weight: 600; }
+        
+        .hidden { display: none !important; }
+        
+        /* Area khusus untuk proyektor QR */
+        .qr-display-area { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; margin-top: 20px; }
+        .qr-display-area img { max-width: 300px; width: 100%; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .qr-timer { font-size: 1.5rem; font-weight: 700; color: #ef4444; margin-top: 15px; }
+        .qr-token-text { font-family: monospace; font-size: 1.2rem; margin-top: 10px; background: #e2e8f0; padding: 4px 12px; border-radius: 4px; }
+
+          /* --- RESPONSIVE MOBILE --- */
+    .mobile-header { display: none; background: var(--bg-sidebar); color: white; padding: 15px 20px; align-items: center; justify-content: space-between; z-index: 20; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .mobile-toggle { background: transparent; color: white; border: none; font-size: 1.5rem; cursor: pointer; }
+    .table-wrap { overflow-x: auto; width: 100%; border-radius: 8px; }
+
+    @media (max-width: 768px) {
+        body { flex-direction: column; }
+        .mobile-header { display: flex; }
+        .sidebar { position: fixed; left: -260px; top: 0; bottom: 0; z-index: 50; transition: 0.3s ease-in-out; box-shadow: 4px 0 10px rgba(0,0,0,0.2); }
+        .sidebar.show { left: 0; }
+        .content { padding: 15px; width: 100%; }
+        .panel { padding: 15px; }
+        .form-grid { grid-template-columns: 1fr; } /* Memaksa input form menumpuk ke bawah di HP */
+        .qr-display-area img { max-width: 100%; height: auto; }
+    }
+    </style>
 </head>
 <body>
-<nav>
-  <div class="nav-brand"><div class="nav-logo">🎓</div><div><div class="nav-title">Presensi<span>QR</span></div><div class="nav-sub">Panel Dosen</div></div></div>
-  <div class="nav-r" id="nav-user"><span class="nav-name" id="nav-name"></span><span class="role-pill" id="nav-chip"></span><button class="btn-nav" onclick="logout()">Keluar</button></div>
-</nav>
+    <div class="mobile-header">
+        <h2>Presensi Panel</h2>
+        <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+    </div>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Panel Dosen</h2>
+            <p id="dosen-name" style="font-size: 0.8rem; margin-top: 5px; color: #cbd5e1;"></p>
+        </div>
+        <div class="sidebar-menu">
+            <button class="active" id="nav-qr" onclick="switchTab('qr')">Buka Presensi (QR)</button>
+            <button id="nav-recap" onclick="switchTab('recap')">Rekap Kehadiran</button>
+        </div>
+        <div class="sidebar-footer">
+            <button class="btn-logout" onclick="logout()">Log Out</button>
+        </div>
+    </div>
 
-<div class="wrap"><div class="layout">
-  <div class="sidebar" id="sidebar">
-    <button class="sb-btn active" onclick="switchTab('dash', this)"><div class="sb-icon">🏠</div>Dashboard</button>
-    <div class="sb-sep">Akademik</div>
-    <button class="sb-btn" onclick="switchTab('setup', this); loadSetup()"><div class="sb-icon">⚙️</div>Setup Kelas</button>
-    <button class="sb-btn" onclick="switchTab('qr', this); loadQrCourses()"><div class="sb-icon">🔲</div>Generate QR</button>
-    <button class="sb-btn" onclick="switchTab('history-all', this); loadHaCourses()"><div class="sb-icon">📋</div>Rekap Absen</button>
-  </div>
-  <div id="content">
-     </div>
-</div></div>
+    <div class="content">
+        <div id="panel-qr" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Pilih Kelas untuk Presensi</h3>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Mata Kuliah</label>
+                        <select id="qr-course" onchange="loadSessions('qr-course', 'qr-session')">
+                            <option value="">Memuat data...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Sesi Pertemuan</label>
+                        <select id="qr-session">
+                            <option value="">Pilih Mata Kuliah dulu</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: flex-end;">
+                        <button class="btn" id="btn-generate" onclick="generateQR()" style="width: 100%;">Tampilkan QR Code</button>
+                    </div>
+                </div>
 
-<script src="api.js"></script>
-<script>
-const S = checkAuth("dosen");
-function switchTab(id, btn) {
-  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".sb-btn").forEach(b => b.classList.remove("active"));
-  $("panel-" + id).classList.add("active"); btn.classList.add("active");
-  setTimeout(() => Object.values(MAPS).forEach(m => { try { m.invalidateSize(); } catch(e){} }), 120);
-}
-// Tambahkan fungsi loadSetup, doGenQR, renderQRCanvas dll.
-</script>
+                <div id="qr-result" class="qr-display-area hidden">
+                    <h2 style="margin-bottom: 20px; color: var(--primary);">Silakan Scan QR Code Ini</h2>
+                    <img id="qr-image" src="" alt="QR Code Presensi">
+                    <div class="qr-token-text" id="qr-text">TKN-XXXXXX</div>
+                    <div class="qr-timer" id="qr-countdown">02:00</div>
+                    <p style="margin-top: 10px; color: #64748b; font-size: 0.9rem;">(Token akan kedaluwarsa dalam 2 menit)</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-recap" class="tab-content hidden">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Rekap Mahasiswa Hadir</h3>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Mata Kuliah</label>
+                        <select id="r-course" onchange="loadSessions('r-course', 'r-session')">
+                            <option value="">Pilih...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Sesi Pertemuan</label>
+                        <select id="r-session">
+                            <option value="">Pilih Mata Kuliah dulu</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: flex-end;">
+                        <button class="btn" onclick="fetchRecap()" style="width: 100%;">Lihat Rekap</button>
+                    </div>
+                </div>
+                
+                <h4 style="margin-top: 20px; margin-bottom: 10px;" id="recap-info">Total Hadir: 0</h4>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>NIM</th><th>Nama Mahasiswa</th><th>Waktu Check-in</th><th>Validasi GPS</th></tr>
+                        </thead>
+                        <tbody id="tbl-recap">
+                            <tr><td colspan="4" style="text-align: center; color: #64748b;">Silakan pilih sesi.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script>
+        let countdownInterval;
+
+        // --- INISIALISASI VALIDASI LOGIN ---
+        window.onload = () => {
+            const role = localStorage.getItem("user_role");
+            // Validasi: Hanya dosen dan admin yang boleh mengakses halaman ini
+            if (role !== "dosen" && role !== "admin") {
+                alert("Akses Ditolak! Harap login sebagai Dosen terlebih dahulu.");
+                window.location.href = "index.html"; 
+                return;
+            }
+            
+            document.getElementById('dosen-name').innerText = localStorage.getItem("user_name") || "Dosen Pengampu";
+            loadCourses();
+        };
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.sidebar button').forEach(el => el.classList.remove('active'));
+            document.getElementById(`panel-${tabId}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabId}`).classList.add('active');
+        }
+
+        // --- FETCH DATA ---
+        async function loadCourses() {
+            const res = await apiCall("courses");
+            if(res.ok) {
+                const opts = '<option value="">Pilih Mata Kuliah...</option>' + res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
+                document.getElementById('qr-course').innerHTML = opts;
+                document.getElementById('r-course').innerHTML = opts;
+            }
+        }
+
+        async function loadSessions(courseSelectId, sessionSelectId) {
+            const courseId = document.getElementById(courseSelectId).value;
+            if(!courseId) return;
+            const res = await apiCall("sessions", { course_id: courseId });
+            if(res.ok) {
+                document.getElementById(sessionSelectId).innerHTML = res.data.items.length === 0 ? '<option value="">Belum ada sesi</option>' :
+                    res.data.items.map(s => `<option value="${s.session_id}">${s.label} (${s.date})</option>`).join('');
+            }
+        }
+
+        // --- FITUR UTAMA: GENERATE QR ---
+        async function generateQR() {
+            const courseId = document.getElementById('qr-course').value;
+            const sessionId = document.getElementById('qr-session').value;
+            
+            if(!courseId || !sessionId) return alert("Pilih Mata Kuliah dan Sesi terlebih dahulu!");
+
+            const btn = document.getElementById('btn-generate');
+            btn.innerText = "Memproses..."; btn.disabled = true;
+
+            const res = await apiCall("presence/qr/generate", { course_id: courseId, session_id: sessionId });
+            
+            if(res.ok) {
+                const token = res.data.qr_token;
+                
+                // Gunakan API eksternal untuk render QR Code dari string token
+                document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${token}`;
+                document.getElementById('qr-text').innerText = token;
+                document.getElementById('qr-result').classList.remove('hidden');
+                
+                startTimer(120); // API mengatur expired dalam 2 menit (120 detik)
+            } else {
+                alert(`Gagal: ${res.error}`);
+            }
+
+            btn.innerText = "Tampilkan QR Code"; btn.disabled = false;
+        }
+
+        function startTimer(duration) {
+            clearInterval(countdownInterval);
+            let timer = duration, minutes, seconds;
+            const display = document.getElementById('qr-countdown');
+            
+            countdownInterval = setInterval(() => {
+                minutes = parseInt(timer / 60, 10);
+                seconds = parseInt(timer % 60, 10);
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                display.innerText = minutes + ":" + seconds;
+
+                if (--timer < 0) {
+                    clearInterval(countdownInterval);
+                    display.innerText = "EXPIRED";
+                    document.getElementById('qr-image').style.opacity = "0.2"; // Blur QR jika expired
+                    alert("Waktu QR Code telah habis. Silakan generate ulang.");
+                } else {
+                    document.getElementById('qr-image').style.opacity = "1";
+                }
+            }, 1000);
+        }
+
+        // --- FITUR: REKAP ABSEN ---
+        async function fetchRecap() {
+            const sessionId = document.getElementById('r-session').value;
+            if(!sessionId) return alert("Pilih sesi!");
+
+            const res = await apiCall("presence/history/all", { session_id: sessionId });
+            const tbody = document.getElementById('tbl-recap');
+            
+            if(res.ok) {
+                document.getElementById('recap-info').innerText = `Total Hadir: ${res.data.total_hadir}`;
+                if(res.data.total_hadir === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Belum ada mahasiswa yang absen.</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = res.data.items.map(i => `
+                    <tr>
+                        <td>${i.nim}</td>
+                        <td>${i.nama}</td>
+                        <td>${new Date(i.jam_checkin).toLocaleTimeString('id-ID')}</td>
+                        <td>${i.maps_url ? `<a href="${i.maps_url}" target="_blank" style="color:var(--primary); font-weight:500;">Buka Maps</a>` : '-'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">${res.error}</td></tr>`;
+            }
+        }
+
+        // --- FUNGSI LOGOUT AMAN ---
+        function logout() { 
+            if (confirm("Apakah Anda yakin ingin keluar dari panel Dosen? Sesi presensi yang sedang berjalan di layar akan terhenti.")) {
+                localStorage.clear(); 
+                window.location.href = "index.html"; 
+            }
+        }
+                // --- FUNGSI RESPONSIVE SIDEBAR ---
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('show');
+        }
+
+        // Menutup sidebar otomatis setelah menu diklik (khusus di HP)
+        document.querySelectorAll('.sidebar button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if(window.innerWidth <= 768) {
+                    document.querySelector('.sidebar').classList.remove('show');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
