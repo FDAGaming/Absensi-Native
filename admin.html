@@ -337,47 +337,54 @@
                 <div class="card">
                     <div class="card-hd">
                         <h2><div class="hd-icon">📍</div> GPS Tracking</h2>
-                        <span id="gps-live-badge" class="live-badge lb-off"><span class="lb-dot"></span>OFF</span>
-                    </div>
-                    <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:14px">
-                        <div class="fg" style="flex:1;margin-bottom:0">
-                            <label>Device ID Mahasiswa</label>
-                            <input type="text" id="gps-device-id" placeholder="mis: dev-mhs-abc123">
-                        </div>
-                        <button class="btn btn-primary" id="btn-gps-monitor" onclick="toggleGpsMonitor()">Mulai Pantau</button>
                     </div>
 
-                    <div id="gps-monitor-display" style="display:none">
-                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
-                            <div class="info-pill">
-                                <div class="ip-icon">📍</div>
-                                <div>
-                                    <div class="ip-key">Koordinat</div>
-                                    <div class="ip-val" id="gps-coords" style="font-size:.75rem">-</div>
-                                </div>
+                    <!-- Input Device ID -->
+                    <div class="fg" style="margin-bottom:0">
+                        <label>DEVICE ID</label>
+                        <div style="display:flex;gap:10px">
+                            <input type="text" id="gps-device-id" placeholder="mis: dev-mhs-abc123" style="flex:1">
+                            <button class="btn btn-primary" id="btn-gps-monitor" onclick="toggleGpsMonitor()">▶ Start</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Koordinat bar + peta -->
+                <div id="gps-monitor-display" style="display:none; margin-top:14px">
+                    <div class="card" style="padding:0;overflow:hidden">
+                        <!-- Koordinat bar -->
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--bdr)">
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <span style="width:10px;height:10px;background:var(--grn);border-radius:50%;display:inline-block;animation:pulse-g 1.4s infinite;flex-shrink:0"></span>
+                                <span id="gps-coords" style="font-family:var(--mono);font-size:.88rem;font-weight:700;color:var(--txt)">-</span>
                             </div>
-                            <div class="info-pill">
-                                <div class="ip-icon">🎯</div>
-                                <div>
-                                    <div class="ip-key">Akurasi</div>
-                                    <div class="ip-val" id="gps-accuracy">-</div>
-                                </div>
-                            </div>
-                            <div class="info-pill">
-                                <div class="ip-icon">🕐</div>
-                                <div>
-                                    <div class="ip-key">Update</div>
-                                    <div class="ip-val" id="gps-time">-</div>
-                                </div>
-                            </div>
+                            <span id="gps-accuracy-badge" style="font-family:var(--mono);font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(239,35,60,.1);color:var(--red)">-</span>
                         </div>
 
-                        <div class="map-wrap">
-                            <div id="gps-map" style="height:360px;width:100%"></div>
-                            <div class="map-bar">
-                                <span id="gps-map-label" style="font-size:.75rem;color:var(--txt3)">Menunggu lokasi...</span>
-                                <a id="gps-maps-link" href="#" target="_blank" style="display:none">Buka Google Maps</a>
+                        <!-- Peta Leaflet -->
+                        <div id="gps-map" style="height:340px;width:100%"></div>
+
+                        <!-- Bar bawah peta -->
+                        <div class="map-bar">
+                            <div>
+                                <div id="gps-map-label" style="font-size:.74rem;color:var(--txt3)">Menunggu lokasi...</div>
+                                <div id="gps-time" style="font-size:.7rem;color:var(--txt4)">-</div>
                             </div>
+                            <a id="gps-maps-link" href="#" target="_blank" style="display:none;font-family:var(--mono);font-size:.72rem;font-weight:600;color:var(--ind);text-decoration:none">Google Maps ↗</a>
+                        </div>
+                    </div>
+
+                    <!-- Riwayat GPS -->
+                    <div class="card" style="margin-top:14px">
+                        <div class="card-hd">
+                            <h2><div class="hd-icon">📍</div> Riwayat GPS Server</h2>
+                            <button class="btn btn-outline btn-sm" onclick="loadGpsHistory()">Refresh</button>
+                        </div>
+                        <div class="tbl-wrap">
+                            <table>
+                                <thead><tr><th>Waktu</th><th>Latitude</th><th>Longitude</th><th>Akurasi</th><th>Maps</th></tr></thead>
+                                <tbody id="tbl-gps-history"><tr><td colspan="5" class="empty">Mulai pantau untuk melihat riwayat</td></tr></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -714,89 +721,106 @@
         if (!deviceId) return showToast("Masukkan Device ID!", "error");
         const btn = document.getElementById('btn-gps-monitor');
         const display = document.getElementById('gps-monitor-display');
-        const badge = document.getElementById('gps-live-badge');
 
         if (isGpsMonitoring) {
             clearInterval(gpsInterval);
             isGpsMonitoring = false;
-            btn.textContent = "Mulai Pantau";
+            btn.innerHTML = '▶ Start';
             btn.className = "btn btn-primary";
-            badge.className = "live-badge lb-off";
-            badge.innerHTML = `<span class="lb-dot"></span>OFF`;
         } else {
             isGpsMonitoring = true;
-            btn.textContent = "Hentikan";
+            btn.innerHTML = '⏹ Stop';
             btn.className = "btn btn-red";
-            badge.className = "live-badge lb-on";
-            badge.innerHTML = `<span class="lb-dot"></span>LIVE`;
             display.style.display = '';
 
-            // Init Leaflet map sekali saja
             if (!gpsMap) {
-                gpsMap = L.map('gps-map').setView([-2.5, 118], 5);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors',
-                    maxZoom: 19
-                }).addTo(gpsMap);
+                setTimeout(() => {
+                    gpsMap = L.map('gps-map').setView([-7.5, 112.5], 13);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+                        maxZoom: 19
+                    }).addTo(gpsMap);
+                    fetchLatestGps(deviceId);
+                }, 100);
+            } else {
+                fetchLatestGps(deviceId);
             }
-
-            fetchLatestGps(deviceId);
             gpsInterval = setInterval(() => fetchLatestGps(deviceId), 5000);
+            loadGpsHistory(deviceId);
         }
     }
 
     async function fetchLatestGps(deviceId) {
         const res = await apiCall("telemetry/gps/latest", { device_id: deviceId });
-        const timeEl = document.getElementById('gps-time');
-
         if (res.ok) {
             const lat = res.data.lat;
             const lng = res.data.lng;
             const acc = res.data.accuracy_m;
+            const ts = res.data.ts;
 
-            document.getElementById('gps-coords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-            document.getElementById('gps-accuracy').textContent = acc ? `±${Math.round(acc)} meter` : '-';
-            timeEl.textContent = new Date(res.data.ts).toLocaleTimeString('id-ID');
-            timeEl.style.color = "var(--grn2)";
+            document.getElementById('gps-coords').textContent = `${lat.toFixed(5)},  ${lng.toFixed(5)}`;
+
+            const badge = document.getElementById('gps-accuracy-badge');
+            badge.textContent = acc ? `±${Math.round(acc)}m` : '-';
+            badge.style.background = acc < 20 ? 'rgba(6,214,160,.12)' : acc < 50 ? 'rgba(244,162,97,.15)' : 'rgba(239,35,60,.1)';
+            badge.style.color = acc < 20 ? 'var(--grn2)' : acc < 50 ? '#c05621' : 'var(--red)';
+
+            document.getElementById('gps-map-label').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            document.getElementById('gps-time').textContent = new Date(ts).toLocaleString('id-ID');
 
             const mapsLink = document.getElementById('gps-maps-link');
             mapsLink.href = `https://www.google.com/maps?q=${lat},${lng}`;
             mapsLink.style.display = '';
-            document.getElementById('gps-map-label').textContent = `${deviceId} · ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
-            // Update marker & accuracy circle di peta
-            const latlng = [lat, lng];
-            if (gpsMarker) {
-                gpsMarker.setLatLng(latlng);
-                if (acc && gpsCircle) gpsCircle.setLatLng(latlng).setRadius(acc);
-            } else {
-                gpsMarker = L.marker(latlng, {
-                    icon: L.divIcon({
-                        className: '',
-                        html: `<div style="width:14px;height:14px;background:var(--ind);border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(67,97,238,.5)"></div>`,
-                        iconSize: [14, 14],
-                        iconAnchor: [7, 7]
-                    })
-                }).addTo(gpsMap).bindPopup(`<div class="pop-title">${deviceId}</div>${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+            if (gpsMap) {
+                const latlng = [lat, lng];
+                if (gpsMarker) {
+                    gpsMarker.setLatLng(latlng);
+                    if (acc && gpsCircle) gpsCircle.setLatLng(latlng).setRadius(acc);
+                } else {
+                    gpsMarker = L.marker(latlng, {
+                        icon: L.divIcon({
+                            className: '',
+                            html: `<div style="width:16px;height:16px;background:#7b2d8b;border:3px solid white;border-radius:50%;box-shadow:0 2px 10px rgba(123,45,139,.6)"></div>`,
+                            iconSize: [16, 16], iconAnchor: [8, 8]
+                        })
+                    }).addTo(gpsMap).bindPopup(`<div class="pop-title">${deviceId}</div>${lat.toFixed(6)}, ${lng.toFixed(6)}`);
 
-                if (acc) {
-                    gpsCircle = L.circle(latlng, {
-                        radius: acc,
-                        color: 'var(--ind)',
-                        fillColor: 'rgba(67,97,238,0.1)',
-                        fillOpacity: 0.3,
-                        weight: 1.5
-                    }).addTo(gpsMap);
+                    if (acc) {
+                        gpsCircle = L.circle(latlng, {
+                            radius: acc, color: '#7b2d8b',
+                            fillColor: 'rgba(123,45,139,0.12)',
+                            fillOpacity: 0.4, weight: 1.5
+                        }).addTo(gpsMap);
+                    }
                 }
+                gpsMap.setView(latlng, gpsMap.getZoom() < 15 ? 16 : gpsMap.getZoom());
             }
-            gpsMap.setView(latlng, gpsMap.getZoom() < 15 ? 16 : gpsMap.getZoom());
-
         } else {
-            document.getElementById('gps-coords').textContent = "Gagal / Device tidak aktif";
-            timeEl.textContent = "-";
-            timeEl.style.color = "var(--red)";
+            document.getElementById('gps-coords').textContent = "Device tidak aktif";
+            document.getElementById('gps-accuracy-badge').textContent = 'offline';
             document.getElementById('gps-maps-link').style.display = 'none';
-            document.getElementById('gps-map-label').textContent = "Tidak ada data lokasi";
+        }
+    }
+
+    async function loadGpsHistory(deviceId) {
+        deviceId = deviceId || document.getElementById('gps-device-id').value.trim();
+        if (!deviceId) return;
+        const tbody = document.getElementById('tbl-gps-history');
+        tbody.innerHTML = `<tr><td colspan="5" class="empty">Memuat...</td></tr>`;
+        const res = await apiCall("telemetry/gps/history", { device_id: deviceId });
+        if (res.ok && res.data.items && res.data.items.length > 0) {
+            tbody.innerHTML = res.data.items.slice(0, 20).map(i => `
+                <tr>
+                    <td style="font-family:var(--mono);font-size:.78rem">${new Date(i.ts).toLocaleString('id-ID')}</td>
+                    <td style="font-family:var(--mono);font-size:.78rem">${parseFloat(i.lat).toFixed(6)}</td>
+                    <td style="font-family:var(--mono);font-size:.78rem">${parseFloat(i.lng).toFixed(6)}</td>
+                    <td>${i.accuracy_m ? `±${Math.round(i.accuracy_m)}m` : '-'}</td>
+                    <td><a href="https://www.google.com/maps?q=${i.lat},${i.lng}" target="_blank" class="maps-link">Maps</a></td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" class="empty">Belum ada riwayat GPS</td></tr>`;
         }
     }
 </script>
