@@ -337,7 +337,39 @@
                     <div class="card-hd">
                         <h2><div class="hd-icon">📍</div> GPS Tracking</h2>
                     </div>
-                    <p class="mut">Fitur GPS Tracking akan segera tersedia.</p>
+                    <div class="fg">
+                        <label>Device ID Mahasiswa</label>
+                        <div style="display:flex;gap:10px">
+                            <input type="text" id="gps-device-id" placeholder="mis: dev-mhs-abc123" style="flex:1">
+                            <button class="btn btn-primary" id="btn-gps-monitor" onclick="toggleGpsMonitor()">Mulai Pantau</button>
+                        </div>
+                    </div>
+                    <div id="gps-monitor-display" style="display:none; margin-top:16px">
+                        <div class="info-pill" style="margin-bottom:10px">
+                            <div class="ip-icon">📍</div>
+                            <div>
+                                <div class="ip-key">Koordinat</div>
+                                <div class="ip-val" id="gps-coords">Menunggu data...</div>
+                            </div>
+                        </div>
+                        <div class="info-pill" style="margin-bottom:10px">
+                            <div class="ip-icon">🎯</div>
+                            <div>
+                                <div class="ip-key">Akurasi</div>
+                                <div class="ip-val" id="gps-accuracy">-</div>
+                            </div>
+                        </div>
+                        <div class="info-pill">
+                            <div class="ip-icon">🕐</div>
+                            <div>
+                                <div class="ip-key">Update Terakhir</div>
+                                <div class="ip-val" id="gps-time">-</div>
+                            </div>
+                        </div>
+                        <div style="margin-top:12px; text-align:center">
+                            <a id="gps-maps-link" href="#" target="_blank" class="maps-link" style="display:none">Buka di Google Maps</a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -375,6 +407,7 @@
         if (name === 'qr') loadCoursesForQR();
         if (name === 'recap') loadCoursesForRecap();
         if (name !== 'sensor' && isMonitoring) toggleMonitor();
+        if (name !== 'gps' && isGpsMonitoring) toggleGpsMonitor();
     }
 
     function showToast(msg, type = 'success') {
@@ -625,6 +658,7 @@
 
     // --- SENSOR ---
     let monitorInterval, isMonitoring = false;
+    let gpsInterval, isGpsMonitoring = false;
 
     function toggleMonitor() {
         const deviceId = document.getElementById('monitor-device-id').value.trim();
@@ -658,6 +692,49 @@
         } else {
             timeEl.textContent = "Gagal / Device tidak aktif";
             timeEl.style.color = "var(--red)";
+        }
+    }
+
+    // --- GPS MONITOR ---
+    function toggleGpsMonitor() {
+        const deviceId = document.getElementById('gps-device-id').value.trim();
+        if (!deviceId) return showToast("Masukkan Device ID!", "error");
+        const btn = document.getElementById('btn-gps-monitor');
+        const display = document.getElementById('gps-monitor-display');
+        if (isGpsMonitoring) {
+            clearInterval(gpsInterval);
+            isGpsMonitoring = false;
+            btn.textContent = "Mulai Pantau";
+            btn.className = "btn btn-primary";
+        } else {
+            isGpsMonitoring = true;
+            btn.textContent = "Hentikan";
+            btn.className = "btn btn-red";
+            display.style.display = '';
+            fetchLatestGps(deviceId);
+            gpsInterval = setInterval(() => fetchLatestGps(deviceId), 5000);
+        }
+    }
+
+    async function fetchLatestGps(deviceId) {
+        const res = await apiCall("telemetry/gps/latest", { device_id: deviceId });
+        const timeEl = document.getElementById('gps-time');
+        if (res.ok) {
+            const lat = res.data.lat;
+            const lng = res.data.lng;
+            const acc = res.data.accuracy_m;
+            document.getElementById('gps-coords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            document.getElementById('gps-accuracy').textContent = acc ? `±${Math.round(acc)} meter` : '-';
+            timeEl.textContent = new Date(res.data.ts).toLocaleTimeString('id-ID');
+            timeEl.style.color = "var(--grn2)";
+            const mapsLink = document.getElementById('gps-maps-link');
+            mapsLink.href = `https://www.google.com/maps?q=${lat},${lng}`;
+            mapsLink.style.display = '';
+        } else {
+            document.getElementById('gps-coords').textContent = "Gagal / Device tidak aktif";
+            timeEl.textContent = "-";
+            timeEl.style.color = "var(--red)";
+            document.getElementById('gps-maps-link').style.display = 'none';
         }
     }
 </script>
