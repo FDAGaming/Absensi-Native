@@ -43,116 +43,39 @@
 
 <script src="api.js"></script>
 <script>
-const S = checkAuth("admin");
+window.onload = () => {
+  const S = getSession();
+  if (S.token && S.role) window.location.href = S.role + ".html"; 
+};
 
-function switchTab(id, btn) {
-  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".sb-btn").forEach(b => b.classList.remove("active"));
-  $("panel-" + id).classList.add("active"); 
-  btn.classList.add("active");
-  setTimeout(() => Object.values(MAPS).forEach(m => { try { m.invalidateSize(); } catch(e){} }), 120);
+function authTab(t) {
+  $("auth-login").style.display = t === "login" ? "block" : "none";
+  $("auth-reg").style.display   = t === "reg"   ? "block" : "none";
+  $("tab-login").className = "auth-tab" + (t === "login" ? " active" : "");
+  $("tab-reg").className   = "auth-tab" + (t === "reg"   ? " active" : "");
 }
 
-// --- MANAJEMEN USER ---
-async function doAddUser() {
-  const name=_v("au-name"),email=_v("au-email"),password=_v("au-pw"),role=$("au-role").value,nim=_v("au-nim");
-  if(!name||!email||!password||!role) return showAlert("au-alert","Semua field wajib.");
-  setSpin("aus",true); 
-  const r=await api("admin/add-user",{name,email,password,role,nim}); 
-  setSpin("aus",false);
-  if(!r.ok) return showAlert("au-alert",r.error);
-  showAlert("au-alert",`✅ ${r.data.name} ditambahkan.`,"ok");
-  ["au-name","au-email","au-pw","au-nim"].forEach(id=>$(id)&&($(id).value="")); loadUserList();
-}
-
-async function loadUserList() {
-  const role=$("ul-filter").value; 
-  const r=await api("admin/list-users",role?{role}:{}); 
-  if(!r.ok) return;
-  $("user-list-tbody").innerHTML=(r.data.items||[]).length===0 
-    ? '<tr><td colspan="5" class="empty">Tidak ada user</td></tr>'
-    : (r.data.items||[]).map((u,i)=>`<tr><td>${i+1}</td><td><strong>${u.name}</strong></td><td>${u.email}</td><td><span class="badge b-adm">${u.role}</span></td><td><code>${u.nim||"-"}</code></td></tr>`).join("");
-}
-
-// --- SETUP KELAS & SESI ---
-async function loadSetup() {
-  const r = await api("courses");
-  if (r.ok) {
-    const items = r.data.items || [];
-    $("ses-csel").innerHTML = '<option value="">— Pilih —</option>' + items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join("");
-    $("course-tbl").innerHTML = items.length === 0
-      ? '<tr><td colspan="2" class="empty">Belum ada matkul</td></tr>'
-      : items.map(c => `<tr><td><code>${c.course_id}</code></td><td><strong>${c.course_name}</strong></td></tr>`).join("");
-  }
-}
-
-async function doCreateCourse() {
-  const cid=_v("ci-id"), cn=_v("ci-name");
-  if(!cid||!cn) return showAlert("cc-alert","Isi ID dan Nama Mata Kuliah.");
-  setSpin("ccs",true); const r=await api("courses/create",{course_id:cid,course_name:cn}); setSpin("ccs",false);
-  if(!r.ok) return showAlert("cc-alert",r.error);
-  showAlert("cc-alert","✅ Mata kuliah dibuat!","ok"); $("ci-id").value=$("ci-name").value=""; loadSetup();
-}
-
-async function doCreateSession() {
-  const cid=$("ses-csel").value, date=_v("ses-date"), label=_v("ses-label");
-  if(!cid||!date||!label) return showAlert("cs-alert","Isi semua field sesi.");
-  setSpin("css2",true); const r=await api("sessions/create",{course_id:cid,date,label}); setSpin("css2",false);
-  if(!r.ok) return showAlert("cs-alert",r.error);
-  showAlert("cs-alert","✅ Sesi berhasil dibuat!","ok"); $("ses-date").value=$("ses-label").value="";
-}
-
-// --- REKAP PRESENSI (PENGAMBILAN SESI) ---
-async function loadHaCourses() {
-  const r = await api("courses");
-  if (r.ok) {
-    const items = r.data.items || [];
-    $("ha-csel").innerHTML = '<option value="">— Pilih —</option>' + items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join("");
-    $("ha-ssel").innerHTML = '<option value="">— Pilih Sesi —</option>';
-  }
-}
-
-// INI ADALAH FUNGSI KRUSIAL YANG MEMBUAT LIST SESI ANDA MUNCUL
-async function loadHaSessions() {
-  const cid = $("ha-csel").value;
-  const el = $("ha-ssel");
-  if (!cid) { el.innerHTML = '<option value="">— Pilih Sesi —</option>'; return; }
+async function doLogin() {
+  const email = _v("l-email"), password = _v("l-pw");
+  if (!email || !password) return showAlert("l-alert", "Isi email dan password.");
+  setSpin("ls", true);
+  const r = await api("auth/login", { email, password });
+  setSpin("ls", false);
+  if (!r.ok) return showAlert("l-alert", r.error);
   
-  el.innerHTML = '<option value="">Memuat data dari server...</option>';
-  const r = await api("sessions", { course_id: cid });
-  el.innerHTML = '<option value="">— Pilih Sesi —</option>';
-  
-  if (r.ok && r.data.items) {
-      if (r.data.items.length === 0) {
-          el.innerHTML = '<option value="">Belum ada sesi di matkul ini</option>';
-      } else {
-          r.data.items.forEach(s => el.innerHTML += `<option value="${s.session_id}">${s.label} — ${s.date}</option>`);
-      }
-  }
+  // INI ADALAH BAGIAN KRUSIAL YANG MEMPERBAIKI MASALAH ANDA
+  sessionStorage.setItem("ps", JSON.stringify(r.data));
+  window.location.href = r.data.role + ".html";
 }
 
-// FUNGSI TAMPILKAN TABEL REKAP
-async function loadHistoryAll() {
-  const sid = $("ha-ssel").value;
-  if (!sid) return showAlert("ha-ssel", "Pilih sesi terlebih dahulu.", "err");
-  
-  $("ha-tbody").innerHTML = '<tr><td colspan="7" class="empty">Mengambil data rekap absen...</td></tr>';
-  const r = await api("presence/history/all", { session_id: sid });
-  if (!r.ok) { $("ha-tbody").innerHTML = `<tr><td colspan="7" class="empty">${r.error}</td></tr>`; return; }
-  
-  const d = r.data, items = d.items || [];
-  $("ha-n").textContent = d.total_hadir; $("ha-sesi").textContent = d.pertemuan || sid; $("ha-tgl").textContent = d.tanggal || "-";
-  $("ha-stats").style.display = "grid";
-
-  $("ha-tbody").innerHTML = items.length === 0
-    ? '<tr><td colspan="7" class="empty">Belum ada absen di sesi ini</td></tr>'
-    : items.map(p => `<tr>
-        <td>${p.no}</td><td><code>${p.nim||"-"}</code></td><td><strong>${p.nama}</strong></td>
-        <td>${fmtTime(p.jam_checkin)}</td>
-        <td>${p.maps_url ? `<a class="maps-link" href="${p.maps_url}" target="_blank">📍 Lihat</a>` : "-"}</td>
-        <td>${p.accel_verified ? `<span class="badge b-ok">✅ ${p.accel_samples||0} sampel</span>` : "-"}</td>
-        <td><span class="badge b-ok">${p.status}</span></td>
-      </tr>`).join("");
+async function doRegister() {
+  const name=_v("r-name"), email=_v("r-email"), password=_v("r-pw"), role=$("r-role").value, nim=_v("r-nim");
+  if (!name||!email||!password||!role) return showAlert("r-alert", "Semua field wajib diisi.");
+  setSpin("rs", true);
+  const r = await api("auth/register", { name, email, password, role, nim });
+  setSpin("rs", false);
+  if (!r.ok) return showAlert("r-alert", r.error);
+  showAlert("r-alert", "✅ Registrasi berhasil! Silakan login.", "ok");
 }
 </script>
 </body>
