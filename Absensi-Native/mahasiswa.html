@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presensi Mahasiswa - PresensiQR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .main-layout { display: flex; min-height: 100vh; flex-direction: column; }
+        .body-layout { display: flex; flex: 1; }
+        .left-sidebar { width: 220px; background: #fff; border-right: 1px solid var(--bdr); padding: 16px 10px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 58px; height: calc(100vh - 58px); overflow-y: auto; }
+        .main-content { flex: 1; padding: 24px; background: var(--bg); overflow-y: auto; }
+        .tab-panel { display: none; } .tab-panel.active { display: block; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 13px 20px; border-radius: 10px; color: white; z-index: 9999; font-size: .88rem; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,.15); display: none; }
+        .toast.show { display: block; animation: pop-in .2s ease; }
+        .toast-success { background: var(--grn2); }
+        .toast-error { background: var(--red); }
+        #qr-reader { width: 100%; max-width: 360px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 1.5px solid var(--bdr); }
+        @media (max-width: 700px) {
+            .body-layout { flex-direction: column; }
+            .left-sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; border-right: none; border-bottom: 1px solid var(--bdr); }
+        }
+    </style>
+</head>
+<body>
+<div class="main-layout">
+
+    <!-- NAV -->
+    <nav>
+        <div class="nav-brand">
+            <div class="nav-logo">📋</div>
+            <div>
+                <div class="nav-title">Presensi<span>QR</span></div>
+                <div class="nav-sub">Cloud Computing / Versi A</div>
+            </div>
+        </div>
+        <div class="nav-r">
+            <span class="nav-name" id="nav-username">Mahasiswa</span>
+            <span class="role-pill rp-mahasiswa">MAHASISWA</span>
+            <button class="btn-nav" onclick="logout()">Keluar</button>
+        </div>
+    </nav>
+
+    <div class="body-layout">
+        <!-- SIDEBAR -->
+        <div class="left-sidebar">
+            <button class="sb-btn active" id="nav-dashboard" onclick="switchTab('dashboard')">
+                <span class="sb-icon">🏠</span> Dashboard
+            </button>
+            <div class="sb-sep">PRESENSI</div>
+            <button class="sb-btn" id="nav-scan" onclick="switchTab('scan')">
+                <span class="sb-icon">📷</span> Scan QR
+            </button>
+            <button class="sb-btn" id="nav-token" onclick="switchTab('token')">
+                <span class="sb-icon">🔑</span> Token Manual
+            </button>
+            <button class="sb-btn" id="nav-history" onclick="switchTab('history')">
+                <span class="sb-icon">📋</span> History Saya
+            </button>
+            <div class="sb-sep">SENSOR</div>
+            <button class="sb-btn" id="nav-accel" onclick="switchTab('accel')">
+                <span class="sb-icon">📡</span> Accelerometer
+            </button>
+            <button class="sb-btn" id="nav-gps" onclick="switchTab('gps')">
+                <span class="sb-icon">📍</span> GPS Tracking
+            </button>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <div id="toast" class="toast"></div>
+
+            <!-- DASHBOARD -->
+            <div id="panel-dashboard" class="tab-panel active">
+                <div class="card">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">🏠</div> Dashboard</h2>
+                    </div>
+                    <p class="mut" style="margin-bottom:16px">
+                        Halo, <strong id="dash-name">-</strong>&nbsp; Role: <span class="badge b-mhs">mahasiswa</span>&nbsp; NIM: <code id="dash-nim">-</code>
+                    </p>
+                    <div class="stats">
+                        <div class="stat s-grn">
+                            <div class="stat-n" id="stat-hadir">-</div>
+                            <div class="stat-l">Total Hadir</div>
+                        </div>
+                        <div class="stat s-ind">
+                            <div class="stat-n" id="stat-mk">-</div>
+                            <div class="stat-l">Mata Kuliah</div>
+                        </div>
+                        <div class="stat s-amb">
+                            <div class="stat-n" id="stat-device">-</div>
+                            <div class="stat-l">Device</div>
+                        </div>
+                    </div>
+                    <p class="mut" style="margin-top:12px; font-size:.8rem; text-align:center;">Pilih menu di sidebar untuk memulai</p>
+                </div>
+            </div>
+
+            <!-- SCAN QR -->
+            <div id="panel-scan" class="tab-panel">
+                <div class="card">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">📷</div> Scan QR Presensi</h2>
+                    </div>
+                    <div class="row2">
+                        <div class="fg">
+                            <label>Mata Kuliah</label>
+                            <select id="s-course" onchange="loadSessions()">
+                                <option value="">Pilih Mata Kuliah...</option>
+                            </select>
+                        </div>
+                        <div class="fg">
+                            <label>Sesi</label>
+                            <select id="s-session">
+                                <option value="">Pilih course dulu...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="scanner-wrap" style="margin-top:12px">
+                        <div id="qr-reader"></div>
+                        <div style="display:flex;gap:10px;margin-top:12px">
+                            <button class="btn btn-primary btn-full" id="btn-start-scan" onclick="startScanner()">Buka Kamera Scanner</button>
+                            <button class="btn btn-red btn-full" id="btn-stop-scan" style="display:none" onclick="stopScanner()">Tutup Kamera</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOKEN MANUAL -->
+            <div id="panel-token" class="tab-panel">
+                <div class="card">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">🔑</div> Input Token Manual</h2>
+                    </div>
+                    <div class="row2">
+                        <div class="fg">
+                            <label>Mata Kuliah</label>
+                            <select id="t-course" onchange="loadSessionsForToken()">
+                                <option value="">Pilih Mata Kuliah...</option>
+                            </select>
+                        </div>
+                        <div class="fg">
+                            <label>Sesi</label>
+                            <select id="t-session">
+                                <option value="">Pilih course dulu...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="fg">
+                        <label>Token QR</label>
+                        <input type="text" id="t-token" placeholder="Masukkan token dari layar dosen..." style="font-family:var(--mono)">
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="submitToken()">Kirim Presensi</button>
+                    <div id="token-alert" class="alert" style="margin-top:10px"></div>
+                </div>
+            </div>
+
+            <!-- HISTORY -->
+            <div id="panel-history" class="tab-panel">
+                <div class="card">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">📋</div> Riwayat Kehadiran Saya</h2>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:flex-end">
+                        <div class="fg" style="flex:1;margin-bottom:0">
+                            <label>Mata Kuliah</label>
+                            <select id="h-course">
+                                <option value="">Pilih Mata Kuliah...</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" style="white-space:nowrap" onclick="fetchHistory()">Lihat Riwayat</button>
+                    </div>
+                    <div class="tbl-wrap" style="margin-top:16px">
+                        <table>
+                            <thead><tr><th>Pertemuan</th><th>Tanggal</th><th>Jam Check-in</th><th>Status</th></tr></thead>
+                            <tbody id="tbl-history"><tr><td colspan="4" class="empty">Pilih mata kuliah untuk melihat riwayat</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACCELEROMETER -->
+            <div id="panel-accel" class="tab-panel">
+                <div class="card">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">📡</div> Accelerometer</h2>
+                        <span id="accel-live-badge" class="live-badge lb-off"><span class="lb-dot"></span>OFF</span>
+                    </div>
+                    <div class="accel-display">
+                        <div class="accel-axis ax-x">
+                            <div class="axis-label">Sumbu X</div>
+                            <div class="axis-val" id="accel-x">0.00</div>
+                            <div class="axis-unit">m/s²</div>
+                        </div>
+                        <div class="accel-axis ax-y">
+                            <div class="axis-label">Sumbu Y</div>
+                            <div class="axis-val" id="accel-y">0.00</div>
+                            <div class="axis-unit">m/s²</div>
+                        </div>
+                        <div class="accel-axis ax-z">
+                            <div class="axis-label">Sumbu Z</div>
+                            <div class="axis-val" id="accel-z">0.00</div>
+                            <div class="axis-unit">m/s²</div>
+                        </div>
+                    </div>
+                    <p class="mut" style="font-size:.78rem;margin-top:8px">
+                        Device ID: <code id="dev-id-display">-</code> &nbsp;·&nbsp; Data dikirim otomatis ke server setiap 5 detik.
+                    </p>
+                </div>
+            </div>
+
+            <!-- GPS TRACKING -->
+            <div id="panel-gps" class="tab-panel">
+                <div class="card">
+                    <div class="card-hd">
+                        <h2><div class="hd-icon">📍</div> GPS Tracking</h2>
+                        <span id="gps-badge" class="live-badge lb-off"><span class="lb-dot"></span>Belum Aktif</span>
+                    </div>
+                    <div class="info-pill" style="margin-bottom:10px">
+                        <div class="ip-icon">📍</div>
+                        <div>
+                            <div class="ip-key">Koordinat</div>
+                            <div class="ip-val" id="gps-coords">Menunggu sinyal...</div>
+                        </div>
+                    </div>
+                    <div class="info-pill">
+                        <div class="ip-icon">🎯</div>
+                        <div>
+                            <div class="ip-key">Akurasi</div>
+                            <div class="ip-val" id="gps-accuracy">-</div>
+                        </div>
+                    </div>
+                    <p class="mut" style="font-size:.78rem;margin-top:12px">Lokasi dikirim otomatis ke server saat GPS aktif.</p>
+                </div>
+            </div>
+
+        </div><!-- end main-content -->
+    </div><!-- end body-layout -->
+</div><!-- end main-layout -->
+
+<script src="api.js"></script>
+<script>
+    // --- DEVICE ID ---
+    if (!localStorage.getItem("device_id")) {
+        localStorage.setItem("device_id", "dev-mhs-" + Math.random().toString(36).substr(2, 9));
+    }
+    const DEVICE_ID = localStorage.getItem("device_id");
+
+    let html5QrCode;
+    let userLat = null, userLng = null, userAcc = null;
+    let accelBatch = [];
+
+    window.onload = async () => {
+        if (localStorage.getItem("user_role") !== "mahasiswa") {
+            alert("Akses Ditolak! Harap login sebagai Mahasiswa.");
+            window.location.href = "index.html";
+            return;
+        }
+        const name = localStorage.getItem("user_name") || "Mahasiswa";
+        document.getElementById('nav-username').textContent = name;
+        document.getElementById('dash-name').textContent = name;
+        document.getElementById('dev-id-display').textContent = DEVICE_ID;
+        document.getElementById('stat-device').textContent = DEVICE_ID.slice(-6);
+
+        // Ambil NIM dari backend karena tidak disimpan saat login
+        const profileRes = await apiCall("auth/me");
+        if (profileRes.ok) {
+            const nim = profileRes.data.nim || "-";
+            localStorage.setItem("user_nim", nim);
+            document.getElementById('dash-nim').textContent = nim;
+        } else {
+            document.getElementById('dash-nim').textContent = localStorage.getItem("user_nim") || "-";
+        }
+
+        loadCourses();
+        loadDashboardStats();
+        initGPS();
+        initAccelerometer();
+    };
+
+    function switchTab(name) {
+        document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.sb-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(`panel-${name}`).classList.add('active');
+        const btn = document.getElementById(`nav-${name}`);
+        if (btn) btn.classList.add('active');
+
+        if (name !== 'scan' && html5QrCode) stopScanner();
+        if (name === 'history') loadCoursesForHistory();
+        if (name === 'token') loadCoursesForToken();
+    }
+
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `toast toast-${type} show`;
+        setTimeout(() => t.classList.remove('show'), 4000);
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = "index.html";
+    }
+
+    // --- DASHBOARD STATS ---
+    async function loadDashboardStats() {
+        const res = await apiCall("courses");
+        if (!res.ok) return;
+        const courses = res.data.items;
+        document.getElementById('stat-mk').textContent = courses.length;
+
+        let total = 0;
+        await Promise.all(courses.map(async c => {
+            const r = await apiCall("presence/history", { course_id: c.course_id });
+            if (r.ok) total += r.data.items.length;
+        }));
+        document.getElementById('stat-hadir').textContent = total;
+    }
+
+    // --- LOAD COURSES ---
+    async function loadCourses() {
+        const res = await apiCall("courses");
+        if (res.ok) {
+            const opts = '<option value="">Pilih Mata Kuliah...</option>' +
+                res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
+            document.getElementById('s-course').innerHTML = opts;
+        }
+    }
+
+    async function loadCoursesForHistory() {
+        const res = await apiCall("courses");
+        if (res.ok) {
+            document.getElementById('h-course').innerHTML = '<option value="">Pilih Mata Kuliah...</option>' +
+                res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
+        }
+    }
+
+    async function loadCoursesForToken() {
+        const res = await apiCall("courses");
+        if (res.ok) {
+            document.getElementById('t-course').innerHTML = '<option value="">Pilih Mata Kuliah...</option>' +
+                res.data.items.map(c => `<option value="${c.course_id}">${c.course_name}</option>`).join('');
+        }
+    }
+
+    async function loadSessions() {
+        const courseId = document.getElementById('s-course').value;
+        if (!courseId) return;
+        const res = await apiCall("sessions", { course_id: courseId });
+        if (res.ok) {
+            document.getElementById('s-session').innerHTML = res.data.items.length === 0
+                ? '<option value="">Belum ada sesi</option>'
+                : res.data.items.map(s => `<option value="${s.session_id}">${s.label}</option>`).join('');
+        }
+    }
+
+    async function loadSessionsForToken() {
+        const courseId = document.getElementById('t-course').value;
+        if (!courseId) return;
+        const res = await apiCall("sessions", { course_id: courseId });
+        if (res.ok) {
+            document.getElementById('t-session').innerHTML = res.data.items.length === 0
+                ? '<option value="">Belum ada sesi</option>'
+                : res.data.items.map(s => `<option value="${s.session_id}">${s.label}</option>`).join('');
+        }
+    }
+
+    // --- SCAN QR ---
+    function startScanner() {
+        const cId = document.getElementById('s-course').value;
+        const sId = document.getElementById('s-session').value;
+        if (!cId || !sId) return showToast("Pilih Mata Kuliah dan Sesi terlebih dahulu!", "error");
+
+        document.getElementById('btn-start-scan').style.display = 'none';
+        document.getElementById('btn-stop-scan').style.display = '';
+
+        html5QrCode = new Html5Qrcode("qr-reader");
+        html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            async (decodedText) => {
+                stopScanner();
+                processCheckIn(decodedText, cId, sId);
+            },
+            () => {}
+        ).catch(() => {
+            showToast("Gagal mengakses kamera. Pastikan izin diberikan.", "error");
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => { html5QrCode.clear(); html5QrCode = null; }).catch(() => {});
+        }
+        document.getElementById('btn-start-scan').style.display = '';
+        document.getElementById('btn-stop-scan').style.display = 'none';
+    }
+
+    async function processCheckIn(token, courseId, sessionId) {
+        showToast("Memproses presensi...");
+        const payload = {
+            device_id: DEVICE_ID,
+            course_id: courseId,
+            session_id: sessionId,
+            qr_token: token,
+            ts: new Date().toISOString()
+        };
+        if (userLat !== null) { payload.lat = userLat; payload.lng = userLng; payload.accuracy_m = userAcc; }
+
+        const res = await apiCall("presence/checkin", payload);
+        if (res.ok) {
+            showToast("Check-in Berhasil!");
+            switchTab('history');
+        } else {
+            showToast(`Gagal: ${res.error}`, "error");
+        }
+    }
+
+    // --- TOKEN MANUAL ---
+    async function submitToken() {
+        const courseId = document.getElementById('t-course').value;
+        const sessionId = document.getElementById('t-session').value;
+        const token = document.getElementById('t-token').value.trim();
+        const alertEl = document.getElementById('token-alert');
+
+        if (!courseId || !sessionId || !token) {
+            alertEl.textContent = "Lengkapi semua field terlebih dahulu.";
+            alertEl.className = "alert a-err show";
+            return;
+        }
+
+        alertEl.className = "alert";
+        const payload = {
+            device_id: DEVICE_ID,
+            course_id: courseId,
+            session_id: sessionId,
+            qr_token: token,
+            ts: new Date().toISOString()
+        };
+        if (userLat !== null) { payload.lat = userLat; payload.lng = userLng; payload.accuracy_m = userAcc; }
+
+        const res = await apiCall("presence/checkin", payload);
+        if (res.ok) {
+            alertEl.textContent = "Presensi berhasil dicatat!";
+            alertEl.className = "alert a-ok show";
+            document.getElementById('t-token').value = '';
+        } else {
+            alertEl.textContent = res.error;
+            alertEl.className = "alert a-err show";
+        }
+    }
+
+    // --- HISTORY ---
+    async function fetchHistory() {
+        const cId = document.getElementById('h-course').value;
+        if (!cId) return showToast("Pilih mata kuliah!", "error");
+
+        const tbody = document.getElementById('tbl-history');
+        tbody.innerHTML = `<tr><td colspan="4" class="empty">Memuat...</td></tr>`;
+
+        const res = await apiCall("presence/history", { course_id: cId });
+        if (res.ok) {
+            tbody.innerHTML = res.data.items.length === 0
+                ? `<tr><td colspan="4" class="empty">Belum ada riwayat kehadiran.</td></tr>`
+                : res.data.items.map(i => `
+                    <tr>
+                        <td>${i.pertemuan}</td>
+                        <td>${i.tanggal}</td>
+                        <td>${new Date(i.jam_checkin).toLocaleTimeString('id-ID')}</td>
+                        <td><span class="badge b-ok">${i.status}</span></td>
+                    </tr>
+                `).join('');
+        } else {
+            tbody.innerHTML = `<tr><td colspan="4" class="empty" style="color:var(--red)">${res.error}</td></tr>`;
+        }
+    }
+
+    // --- GPS TELEMETRY ---
+    function initGPS() {
+        if (!("geolocation" in navigator)) return;
+        navigator.geolocation.watchPosition(
+            (pos) => {
+                userLat = pos.coords.latitude;
+                userLng = pos.coords.longitude;
+                userAcc = pos.coords.accuracy;
+
+                const badge = document.getElementById('gps-badge');
+                badge.className = "live-badge lb-on";
+                badge.innerHTML = `<span class="lb-dot"></span>Aktif (${Math.round(userAcc)}m)`;
+                document.getElementById('gps-coords').textContent = `${userLat.toFixed(6)}, ${userLng.toFixed(6)}`;
+                document.getElementById('gps-accuracy').textContent = `±${Math.round(userAcc)} meter`;
+
+                apiCall("telemetry/gps", { device_id: DEVICE_ID, ts: new Date().toISOString(), lat: userLat, lng: userLng, accuracy_m: userAcc });
+            },
+            (err) => {
+                console.warn("GPS:", err.message);
+                document.getElementById('gps-badge').innerHTML = `<span class="lb-dot"></span>Ditolak`;
+                document.getElementById('gps-coords').textContent = "Akses lokasi ditolak";
+            },
+            { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+        );
+    }
+
+    // --- ACCELEROMETER TELEMETRY ---
+    function initAccelerometer() {
+        if (!window.DeviceMotionEvent) return;
+
+        window.addEventListener('devicemotion', (event) => {
+            const ax = event.accelerationIncludingGravity.x;
+            const ay = event.accelerationIncludingGravity.y;
+            const az = event.accelerationIncludingGravity.z;
+            if (ax === null) return;
+
+            document.getElementById('accel-x').textContent = ax.toFixed(2);
+            document.getElementById('accel-y').textContent = ay.toFixed(2);
+            document.getElementById('accel-z').textContent = az.toFixed(2);
+
+            const badge = document.getElementById('accel-live-badge');
+            badge.className = "live-badge lb-on";
+            badge.innerHTML = `<span class="lb-dot"></span>LIVE`;
+
+            accelBatch.push({ t: new Date().toISOString(), x: parseFloat(ax.toFixed(3)), y: parseFloat(ay.toFixed(3)), z: parseFloat(az.toFixed(3)) });
+        });
+
+        setInterval(() => {
+            if (accelBatch.length === 0) return;
+            const samples = accelBatch.splice(0, 20);
+            apiCall("telemetry/accel", { device_id: DEVICE_ID, ts: new Date().toISOString(), samples });
+        }, 5000);
+    }
+</script>
+</body>
+</html>
