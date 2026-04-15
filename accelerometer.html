@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sensor Accelerometer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Styling sama dengan milikmu */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem; color: #334155; }
+    .card { background: #ffffff; border-radius: 24px; padding: 2rem; max-width: 500px; width: 100%; box-shadow: 0 10px 30px rgba(30, 64, 175, 0.1); border: 1px solid rgba(255, 255, 255, 0.8); text-align: center; }
+    .device-id { font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem; background: #f1f5f9; padding: 0.5rem; border-radius: 8px; display: inline-block; }
+    .sensor-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .sensor-box { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 16px; padding: 1rem 0.5rem; }
+    .sensor-label { font-size: 0.9rem; font-weight: bold; color: #3b82f6; margin-bottom: 0.5rem; }
+    .sensor-value { font-size: 1.25rem; font-weight: 700; color: #0f172a; }
+    .chart-container { width: 100%; height: 250px; margin-bottom: 2rem; }
+    .btn { width: 100%; padding: 1rem; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-bottom: 1rem; color: white;}
+    .btn-start { background: #3b82f6; }
+    .btn-stop { background: #ef4444; display: none; }
+    .btn-back { background: #e2e8f0; color: #475569; }
+    #status { font-size: 0.85rem; margin-top: 1rem; color: #f59e0b; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>Data Accelerometer</h1>
+    <div class="device-id" id="device-id-display">Device ID: Memuat...</div>
+    <div class="sensor-grid">
+      <div class="sensor-box"><div class="sensor-label">X</div><div class="sensor-value" id="val-x">0.00</div></div>
+      <div class="sensor-box"><div class="sensor-label">Y</div><div class="sensor-value" id="val-y">0.00</div></div>
+      <div class="sensor-box"><div class="sensor-label">Z</div><div class="sensor-value" id="val-z">0.00</div></div>
+    </div>
+    <div class="chart-container"><canvas id="accelChart"></canvas></div>
+    <button class="btn btn-start" id="btn-start" onclick="startSensor()">Mulai Perekaman</button>
+    <button class="btn btn-stop" id="btn-stop" onclick="stopSensor()">Berhenti</button>
+    <button class="btn btn-back" onclick="window.location.href='index.html'">Kembali ke Dashboard</button>
+    <div id="status">Standby. Tekan mulai untuk merekam.</div>
+  </div>
+
+  <script>
+    // Wajib Ganti dengan Link Web App milikmu
+    const BASE_URL = "https://script.google.com/macros/s/AKfycbysO3ewmeBUyD_IchWUe5_mcZOd1oQ1j5pCDjzuo96P9pj1hnmQQlTtMdy4eZvj4N_DyQ/exec";
+
+    let deviceId = localStorage.getItem("gas_device_id");
+    if (!deviceId) {
+      deviceId = "DEV-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+      localStorage.setItem("gas_device_id", deviceId);
+    }
+    document.getElementById("device-id-display").innerText = "Device ID: " + deviceId;
+
+    let isRecording = false; let dataBuffer = []; let lastSampleTime = 0; let batchInterval = null;
+    const ctx = document.getElementById('accelChart').getContext('2d');
+    const accelChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: [], datasets: [
+        { label: 'X', borderColor: '#ef4444', data: [], pointRadius: 0 },
+        { label: 'Y', borderColor: '#10b981', data: [], pointRadius: 0 },
+        { label: 'Z', borderColor: '#3b82f6', data: [], pointRadius: 0 }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { suggestedMin: -15, suggestedMax: 15 } } }
+    });
+
+    function startSensor() {
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        DeviceMotionEvent.requestPermission().then(state => { if (state === 'granted') activateSensor(); }).catch(console.error);
+      } else activateSensor();
+    }
+
+    function activateSensor() {
+      isRecording = true;
+      document.getElementById("btn-start").style.display = "none";
+      document.getElementById("btn-stop").style.display = "block";
+      document.getElementById("status").innerText = "Merekam & mengirim data...";
+      window.addEventListener('devicemotion', handleMotion);
+      batchInterval = setInterval(sendBatchData, 3000);
+    }
+
+    function handleMotion(event) {
+      if (!isRecording) return;
+      let now = Date.now(); if (now - lastSampleTime < 200) return; lastSampleTime = now;
+      let x = event.accelerationIncludingGravity?.x || 0; let y = event.accelerationIncludingGravity?.y || 0; let z = event.accelerationIncludingGravity?.z || 0;
+      
+      document.getElementById("val-x").innerText = x.toFixed(2); document.getElementById("val-y").innerText = y.toFixed(2); document.getElementById("val-z").innerText = z.toFixed(2);
+      accelChart.data.labels.push(""); accelChart.data.datasets[0].data.push(x); accelChart.data.datasets[1].data.push(y); accelChart.data.datasets[2].data.push(z);
+      if (accelChart.data.labels.length > 50) { accelChart.data.labels.shift(); accelChart.data.datasets.forEach(d => d.data.shift()); }
+      accelChart.update();
+      dataBuffer.push({ x: parseFloat(x.toFixed(3)), y: parseFloat(y.toFixed(3)), z: parseFloat(z.toFixed(3)), ts: new Date().toISOString() });
+    }
+
+    function sendBatchData() {
+      if (dataBuffer.length === 0) return;
+      let payload = { device_id: deviceId, ts: new Date().toISOString(), data: [...dataBuffer] };
+      dataBuffer = []; 
+
+      fetch(BASE_URL + "?path=sensor/accel/batch", {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+        redirect: "follow"
+      }).catch(err => console.error(err));
+    }
+
+    function stopSensor() {
+      isRecording = false; window.removeEventListener('devicemotion', handleMotion); clearInterval(batchInterval);
+      sendBatchData();
+      document.getElementById("btn-start").style.display = "block"; document.getElementById("btn-stop").style.display = "none";
+      document.getElementById("status").innerText = "Berhenti merekam.";
+    }
+  </script>
+</body>
+</html>

@@ -1,2050 +1,342 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>PresensiQR — Sistem Absen Cloud</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<style>
-:root{
-  --bg:#f0f4ff;--bg2:#e8edfb;--white:#ffffff;--bdr:#dde3f5;--bdr2:#c8d0eb;
-  --ind:#4361ee;--ind2:#3a0ca3;--vio:#7b2d8b;--sky:#4cc9f0;
-  --grn:#06d6a0;--grn2:#059669;--red:#ef233c;--amb:#f4a261;--amb2:#e76f51;
-  --txt:#0f1729;--txt2:#4a5578;--txt3:#8891ab;--txt4:#bec4d6;
-  --grad:linear-gradient(135deg,#4361ee,#7b2d8b);
-  --grad2:linear-gradient(135deg,#4cc9f0,#4361ee);
-  --gradg:linear-gradient(135deg,#06d6a0,#059669);
-  --r:14px;--r2:10px;
-  --sh:0 2px 16px rgba(67,97,238,.1);
-  --sh2:0 8px 40px rgba(67,97,238,.18);
-  --sh3:0 1px 4px rgba(15,23,41,.06);
-  --sans:'Bricolage Grotesque',system-ui,sans-serif;
-  --mono:'JetBrains Mono',monospace;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--sans);background:var(--bg);color:var(--txt);min-height:100vh;-webkit-font-smoothing:antialiased;
-  background-image:radial-gradient(circle at 15% 0%,rgba(67,97,238,.07) 0%,transparent 50%),radial-gradient(circle at 85% 100%,rgba(76,201,240,.07) 0%,transparent 50%)}
-::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px}
+/**
+ * =============================================================
+ * GAS Presensi Backend — Optimized version
+ * Dynamic QR, Accelerometer, GPS Tracking
+ * =============================================================
+ */
 
-/* NAV */
-nav{background:rgba(255,255,255,.9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--bdr);height:58px;display:flex;align-items:center;
-  justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:300;
-  box-shadow:0 1px 12px rgba(67,97,238,.07)}
-.nav-brand{display:flex;align-items:center;gap:10px}
-.nav-logo{width:34px;height:34px;background:var(--grad);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 3px 10px rgba(67,97,238,.35)}
-.nav-title{font-size:.95rem;font-weight:800;color:var(--txt);letter-spacing:-.3px}
-.nav-title span{color:var(--ind)}
-.nav-sub{font-size:.68rem;color:var(--txt3);font-family:var(--mono)}
-.nav-r{display:flex;align-items:center;gap:10px}
-.nav-name{font-size:.84rem;font-weight:600;color:var(--txt2)}
-.role-pill{font-family:var(--mono);font-size:.65rem;font-weight:700;padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
-.rp-admin{background:rgba(239,35,60,.1);color:var(--red)}
-.rp-dosen{background:rgba(244,162,97,.15);color:#c05621}
-.rp-mahasiswa{background:rgba(6,214,160,.12);color:var(--grn2)}
-.btn-nav{background:var(--white);border:1.5px solid var(--bdr2);color:var(--txt2);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:.82rem;font-family:var(--sans);font-weight:600;transition:all .15s}
-.btn-nav:hover{border-color:var(--ind);color:var(--ind)}
-
-/* LAYOUT */
-.wrap{max-width:980px;margin:0 auto;padding:20px 14px}
-.page{display:none}.page.active{display:block}
-.layout{display:grid;grid-template-columns:210px 1fr;gap:16px;align-items:start}
-
-/* SIDEBAR */
-.sidebar{background:var(--white);border:1px solid var(--bdr);border-radius:var(--r);padding:12px;position:sticky;top:72px;box-shadow:var(--sh3)}
-.sb-sep{font-family:var(--mono);font-size:.62rem;color:var(--txt4);text-transform:uppercase;letter-spacing:.8px;padding:10px 10px 4px;font-weight:600}
-.sb-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 11px;border:none;border-radius:9px;background:transparent;color:var(--txt2);font-size:.85rem;font-family:var(--sans);font-weight:600;cursor:pointer;text-align:left;transition:all .14s;margin-bottom:2px}
-.sb-btn:hover{background:var(--bg);color:var(--ind)}
-.sb-btn.active{background:linear-gradient(135deg,rgba(67,97,238,.12),rgba(123,45,139,.08));color:var(--ind);border:1px solid rgba(67,97,238,.2)}
-.sb-icon{width:26px;height:26px;background:var(--bg2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;transition:background .14s}
-.sb-btn.active .sb-icon{background:linear-gradient(135deg,rgba(67,97,238,.18),rgba(123,45,139,.12))}
-
-/* PANEL */
-.tab-panel{display:none}.tab-panel.active{display:block}
-
-/* CARD */
-.card{background:var(--white);border:1px solid var(--bdr);border-radius:var(--r);padding:22px;margin-bottom:14px;box-shadow:var(--sh3);animation:card-in .25s ease both}
-@keyframes card-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bdr)}
-.card-hd h2{font-size:1rem;font-weight:800;color:var(--txt);letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
-.hd-icon{width:30px;height:30px;background:var(--grad);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;box-shadow:0 3px 8px rgba(67,97,238,.25)}
-.card-badge{font-family:var(--mono);font-size:.68rem;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(6,214,160,.1);color:var(--grn2);border:1px solid rgba(6,214,160,.25)}
-
-/* FORM */
-.fg{margin-bottom:14px}
-label{display:block;font-size:.74rem;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-input,select,textarea{width:100%;padding:9px 13px;background:var(--bg);border:1.5px solid var(--bdr);border-radius:9px;color:var(--txt);font-size:.9rem;font-family:var(--sans);transition:border .15s,box-shadow .15s}
-input:focus,select:focus{outline:none;border-color:var(--ind);box-shadow:0 0 0 3px rgba(67,97,238,.1);background:var(--white)}
-select option{background:var(--white)}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-
-/* BTN */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 20px;border:none;border-radius:10px;font-size:.88rem;font-weight:700;font-family:var(--sans);cursor:pointer;transition:all .16s;white-space:nowrap}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-full{width:100%}.btn-sm{padding:6px 13px;font-size:.8rem;border-radius:8px}
-.btn-primary{background:var(--grad);color:#fff;box-shadow:0 4px 14px rgba(67,97,238,.35)}
-.btn-primary:not(:disabled):hover{box-shadow:0 6px 20px rgba(67,97,238,.45);transform:translateY(-1px)}
-.btn-green{background:var(--gradg);color:#fff;box-shadow:0 4px 12px rgba(6,214,160,.3)}
-.btn-green:not(:disabled):hover{box-shadow:0 6px 16px rgba(6,214,160,.4);transform:translateY(-1px)}
-.btn-red{background:linear-gradient(135deg,#ef233c,#c0152a);color:#fff;box-shadow:0 4px 12px rgba(239,35,60,.25)}
-.btn-red:not(:disabled):hover{transform:translateY(-1px)}
-.btn-outline{background:var(--white);border:1.5px solid var(--bdr2);color:var(--txt2)}
-.btn-outline:hover{border-color:var(--ind);color:var(--ind)}
-.btn-amber{background:linear-gradient(135deg,var(--amb),var(--amb2));color:#fff;box-shadow:0 4px 12px rgba(244,162,97,.3)}
-
-/* ALERT */
-.alert{padding:11px 15px;border-radius:9px;font-size:.85rem;display:none;margin-top:10px;font-weight:500}
-.alert.show{display:block;animation:pop-in .2s ease}
-.a-ok{background:rgba(6,214,160,.1);color:#065f46;border:1px solid rgba(6,214,160,.3)}
-.a-err{background:rgba(239,35,60,.08);color:#9b1c1c;border:1px solid rgba(239,35,60,.2)}
-.a-info{background:rgba(67,97,238,.08);color:#1e3a8a;border:1px solid rgba(67,97,238,.2)}
-
-/* TABLE */
-.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--bdr)}
-table{width:100%;border-collapse:collapse;font-size:.84rem}
-thead th{background:var(--bg2);color:var(--txt3);padding:10px 13px;text-align:left;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--bdr);white-space:nowrap}
-tbody td{padding:10px 13px;border-bottom:1px solid var(--bdr);color:var(--txt);vertical-align:middle}
-tbody tr:last-child td{border:none}
-tbody tr:hover{background:var(--bg)}
-.empty{text-align:center;padding:28px;color:var(--txt4);font-family:var(--mono);font-size:.8rem}
-
-/* BADGE */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:.71rem;font-weight:700}
-.b-ok{background:rgba(6,214,160,.1);color:var(--grn2);border:1px solid rgba(6,214,160,.25)}
-.b-adm{background:rgba(239,35,60,.1);color:var(--red);border:1px solid rgba(239,35,60,.2)}
-.b-dos{background:rgba(244,162,97,.12);color:#c05621;border:1px solid rgba(244,162,97,.3)}
-.b-mhs{background:rgba(67,97,238,.1);color:var(--ind);border:1px solid rgba(67,97,238,.2)}
-
-/* STATS */
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
-.stat{background:var(--white);border:1px solid var(--bdr);border-radius:var(--r2);padding:16px;text-align:center;position:relative;overflow:hidden}
-.stat::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
-.stat.s-ind::before{background:var(--grad)}
-.stat.s-grn::before{background:var(--gradg)}
-.stat.s-amb::before{background:linear-gradient(90deg,var(--amb),var(--amb2))}
-.stat-n{font-size:1.8rem;font-weight:800;color:var(--txt);letter-spacing:-1px}
-.stat-l{font-size:.7rem;color:var(--txt3);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
-
-/* QR SECTION */
-.qr-section{display:flex;gap:24px;align-items:flex-start;margin-top:18px}
-.qr-left{flex:0 0 auto}
-.qr-right{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0}
-
-/* QR FRAME */
-.qr-frame{background:#fff;border-radius:18px;padding:14px;position:relative;display:inline-block;box-shadow:0 8px 40px rgba(67,97,238,.2),0 0 0 1px rgba(67,97,238,.12)}
-.qr-frame .corner{position:absolute;width:22px;height:22px;border-color:var(--ind);border-style:solid}
-.qr-frame .corner.tl{top:8px;left:8px;border-width:3px 0 0 3px;border-radius:5px 0 0 0}
-.qr-frame .corner.tr{top:8px;right:8px;border-width:3px 3px 0 0;border-radius:0 5px 0 0}
-.qr-frame .corner.bl{bottom:8px;left:8px;border-width:0 0 3px 3px;border-radius:0 0 0 5px}
-.qr-frame .corner.br{bottom:8px;right:8px;border-width:0 3px 3px 0;border-radius:0 0 5px 0}
-#qrcode{display:flex;align-items:center;justify-content:center;min-width:210px;min-height:210px}
-#qrcode>canvas,#qrcode>img{display:block!important;visibility:visible!important;opacity:1!important;border-radius:8px}
-.qr-scan-line{position:absolute;left:14px;right:14px;height:2px;background:linear-gradient(90deg,transparent,var(--ind),transparent);animation:scan 2.5s ease-in-out infinite;pointer-events:none;z-index:2}
-@keyframes scan{0%{top:14px}50%{top:calc(100% - 14px)}100%{top:14px}}
-
-/* TOKEN */
-.token-display{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(67,97,238,.06),rgba(123,45,139,.04));border:1.5px solid rgba(67,97,238,.2);border-radius:12px;padding:12px 16px}
-.token-label{font-size:.65rem;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
-.token-val{font-family:var(--mono);font-size:1.15rem;font-weight:700;color:var(--ind);letter-spacing:2px;flex:1;text-align:center}
-
-/* TIMER */
-.qr-timer-box{display:flex;align-items:center;gap:14px;background:var(--bg);border:1.5px solid var(--bdr);border-radius:12px;padding:12px 16px}
-.timer-ring{position:relative;width:48px;height:48px;flex-shrink:0}
-.timer-ring svg{transform:rotate(-90deg)}
-.timer-ring circle{transition:stroke-dashoffset 1s linear}
-.timer-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--txt2)}
-.timer-info{flex:1}
-.timer-countdown{font-family:var(--mono);font-size:1.7rem;font-weight:700;color:var(--txt);line-height:1}
-.timer-countdown.danger{color:var(--red);animation:blink .8s ease-in-out infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
-.timer-sub{font-size:.72rem;color:var(--txt3);margin-top:2px}
-
-/* INFO PILLS */
-.info-pill{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--bdr);border-radius:9px;padding:9px 13px}
-.ip-icon{width:26px;height:26px;background:var(--grad);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0}
-.ip-key{font-size:.66rem;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
-.ip-val{font-weight:700;color:var(--txt);font-family:var(--mono);font-size:.82rem}
-.auto-tag{display:flex;align-items:center;gap:8px;padding:9px 13px;background:linear-gradient(135deg,rgba(6,214,160,.08),rgba(67,97,238,.05));border:1px solid rgba(6,214,160,.25);border-radius:9px;font-size:.8rem;color:var(--grn2);font-weight:600}
-.dot-pulse{width:8px;height:8px;background:var(--grn);border-radius:50%;animation:pulse-g 1.6s ease-in-out infinite;flex-shrink:0}
-@keyframes pulse-g{0%,100%{box-shadow:0 0 0 0 rgba(6,214,160,.5)}50%{box-shadow:0 0 0 6px rgba(6,214,160,0)}}
-
-/* AUTH */
-.auth-wrap{max-width:420px;margin:44px auto}
-.auth-hero{text-align:center;margin-bottom:28px}
-.auth-hero-logo{width:76px;height:76px;background:var(--grad);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:2.3rem;margin:0 auto 16px;box-shadow:0 8px 32px rgba(67,97,238,.35);animation:bounce-in .5s cubic-bezier(.175,.885,.32,1.275)}
-@keyframes bounce-in{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:none}}
-.auth-hero h1{font-size:1.6rem;font-weight:800;letter-spacing:-1px}
-.auth-hero h1 span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.auth-hero p{color:var(--txt2);font-size:.88rem;margin-top:5px}
-.auth-tabs{display:flex;background:var(--bg2);border:1.5px solid var(--bdr);border-radius:11px;padding:4px;gap:4px;margin-bottom:20px}
-.auth-tab{flex:1;padding:8px;border:none;border-radius:8px;cursor:pointer;font-family:var(--sans);font-size:.85rem;font-weight:700;transition:all .15s;background:transparent;color:var(--txt3)}
-.auth-tab.active{background:var(--white);color:var(--ind);box-shadow:0 2px 8px rgba(67,97,238,.12)}
-
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(15,23,41,.5);backdrop-filter:blur(8px);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
-.modal-overlay.open{display:flex}
-.modal{background:var(--white);border-radius:20px;padding:28px;width:100%;max-width:380px;box-shadow:0 24px 80px rgba(15,23,41,.2);animation:modal-pop .3s cubic-bezier(.175,.885,.32,1.275);border:1px solid var(--bdr)}
-@keyframes modal-pop{from{opacity:0;transform:scale(.85) translateY(20px)}to{opacity:1;transform:none}}
-.modal-strip{height:5px;border-radius:4px;margin-bottom:22px}
-.ms-ind{background:var(--grad)}.ms-grn{background:var(--gradg)}.ms-red{background:linear-gradient(90deg,var(--red),#c0152a)}
-.modal-icon{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 14px}
-.mi-ind{background:linear-gradient(135deg,rgba(67,97,238,.15),rgba(123,45,139,.1))}
-.mi-grn{background:rgba(6,214,160,.12)}.mi-red{background:rgba(239,35,60,.1)}
-.modal h3{font-size:1.05rem;font-weight:800;text-align:center;margin-bottom:5px}
-.modal-sub{font-size:.83rem;color:var(--txt2);text-align:center;margin-bottom:18px}
-.modal-data{background:var(--bg);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;margin-bottom:14px}
-.mdr{display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid var(--bdr)}
-.mdr:last-child{border:none}
-.mdr-key{font-size:.68rem;color:var(--txt3);font-weight:700;text-transform:uppercase;width:55px;flex-shrink:0}
-.mdr-val{font-family:var(--mono);font-size:.83rem;font-weight:600;color:var(--txt);flex:1}
-.gps-row{display:flex;align-items:center;gap:10px;padding:10px 13px;background:var(--bg);border:1px solid var(--bdr);border-radius:10px;margin-bottom:14px;font-size:.82rem}
-.gps-spin{width:10px;height:10px;border:2px solid var(--bdr2);border-top-color:var(--ind);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;transition:all .3s}
-.gps-spin.ok{animation:none;background:var(--grn);border:none;border-radius:50%}
-.gps-spin.err{animation:none;background:var(--red);border:none;border-radius:50%}
-
-/* MAP */
-.map-wrap{border-radius:10px;overflow:hidden;border:1px solid var(--bdr);margin-top:12px;position:relative;box-shadow:var(--sh3)}
-.map-bar{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-top:1px solid var(--bdr);padding:7px 12px;display:flex;align-items:center;justify-content:space-between;font-size:.76rem;z-index:400;color:var(--txt2)}
-.map-bar a{color:var(--ind);text-decoration:none;font-family:var(--mono);font-size:.72rem;font-weight:600}
-
-/* GPS */
-.gps-srow{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1px solid var(--bdr);border-radius:10px;margin-bottom:12px;font-size:.84rem}
-.track-dot{width:9px;height:9px;border-radius:50%;background:var(--txt4);flex-shrink:0;transition:background .3s}
-.track-dot.active{background:var(--grn);animation:pulse-g 1.4s infinite}
-
-/* ACCEL GATE */
-.accel-gate-viz{display:flex;align-items:center;gap:20px;padding:20px;background:var(--bg);border:1.5px solid var(--bdr);border-radius:12px;margin-bottom:14px}
-.agv-ring{width:90px;height:90px;border-radius:50%;border:3px solid var(--bdr2);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;transition:all .3s;background:var(--white)}
-.agv-ring.shaking{border-color:var(--ind);box-shadow:0 0 0 6px rgba(67,97,238,.12);animation:shake-ring .25s ease-in-out infinite}
-.agv-ring.done{border-color:var(--grn);box-shadow:0 0 0 6px rgba(6,214,160,.15);background:rgba(6,214,160,.08)}
-@keyframes shake-ring{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-3px) rotate(-4deg)}75%{transform:translateX(3px) rotate(4deg)}}
-.agv-inner{text-align:center}
-.agv-icon{font-size:2rem;transition:transform .15s}
-.agv-ring.shaking .agv-icon{animation:phone-shake .15s ease-in-out infinite alternate}
-@keyframes phone-shake{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}
-.agv-bars{display:flex;flex-direction:column;gap:6px;flex:1}
-.agv-bar-wrap{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--txt3)}
-.agv-bar{height:8px;width:10px;border-radius:4px;transition:width .15s;min-width:8px;max-width:180px}
-.accel-verified{background:linear-gradient(135deg,rgba(6,214,160,.08),rgba(67,97,238,.05));border:1.5px solid rgba(6,214,160,.3);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.scan-unlocked{opacity:1!important;pointer-events:auto!important;transition:opacity .4s}
-
-/* ACCEL DISPLAY — 3-column grid */
-.accel-display{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
-.accel-axis{background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:14px;text-align:center;position:relative;overflow:hidden}
-.accel-axis::after{content:"";position:absolute;bottom:0;left:0;right:0;height:3px}
-.ax-x::after{background:linear-gradient(90deg,var(--ind),var(--sky))}
-.ax-y::after{background:linear-gradient(90deg,var(--grn),#059669)}
-.ax-z::after{background:linear-gradient(90deg,var(--amb),var(--amb2))}
-.axis-label{font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--txt3);text-transform:uppercase}
-.axis-val{font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--txt);margin-top:3px}
-.axis-unit{font-size:.65rem;color:var(--txt3)}
-
-/* ACCEL CHART */
-.accel-chart-wrap{background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:14px;margin-bottom:14px}
-.accel-chart-title{font-size:.74rem;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
-#accel-canvas{width:100%;height:120px;border-radius:6px}
-
-/* MISC */
-.divider{border:none;border-top:1px solid var(--bdr);margin:16px 0}
-.mt2{margin-top:10px}.mt3{margin-top:16px}
-.mut{color:var(--txt2);font-size:.84rem}
-code{font-family:var(--mono);font-size:.81rem;color:var(--ind);background:rgba(67,97,238,.08);padding:2px 6px;border-radius:4px}
-.maps-link{color:var(--ind);text-decoration:none;font-size:.78rem;font-weight:600}
-.maps-link:hover{text-decoration:underline}
-.map-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes pop-in{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
-.success-check{text-align:center;animation:pop-in .4s cubic-bezier(.175,.885,.32,1.275)}
-#qr-reader{width:100%;max-width:360px;margin:0 auto;border-radius:12px;overflow:hidden;border:1.5px solid var(--bdr)}
-.leaflet-popup-content-wrapper{border-radius:12px!important;box-shadow:0 8px 24px rgba(15,23,41,.15)!important;border:1px solid var(--bdr)!important}
-.pop-title{font-weight:800;color:var(--ind);font-size:.84rem;margin-bottom:4px}
-.leaflet-popup-content{font-size:.81rem;line-height:1.55;color:var(--txt2)}
-.gps-saved-tag{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(6,214,160,.08);border:1px solid rgba(6,214,160,.25);border-radius:8px;margin-top:10px;font-size:.8rem;color:var(--grn2);font-weight:600}
-
-/* Accel live badge */
-.live-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:.68rem;padding:3px 10px;border-radius:20px}
-.lb-on{background:rgba(6,214,160,.12);color:var(--grn2);border:1px solid rgba(6,214,160,.3)}
-.lb-off{background:var(--bg2);color:var(--txt3);border:1px solid var(--bdr)}
-.lb-dot{width:6px;height:6px;border-radius:50%}
-.lb-on .lb-dot{background:var(--grn);animation:pulse-g 1.2s infinite}
-.lb-off .lb-dot{background:var(--txt4)}
-
-@media(max-width:700px){
-  .layout{grid-template-columns:1fr}
-  .sidebar{position:static;display:flex;flex-wrap:wrap;gap:4px;padding:8px}
-  .sb-btn{flex:1;min-width:110px;font-size:.78rem;justify-content:center}
-  .sb-sep{width:100%}
-  .stats{grid-template-columns:1fr 1fr}
-  .row2,.row3{grid-template-columns:1fr}
-  .qr-section{flex-direction:column}
-  .qr-left{width:100%;display:flex;justify-content:center}
-  .auth-wrap{margin:20px auto}
-  .accel-display{grid-template-columns:1fr}
-}
-</style>
-</head>
-<body>
-
-<nav>
-  <div class="nav-brand">
-    <div class="nav-logo">🎓</div>
-    <div>
-      <div class="nav-title">Presensi<span>QR</span></div>
-      <div class="nav-sub">Cloud Computing / Versi A</div>
-    </div>
-  </div>
-  <div class="nav-r" id="nav-user" style="display:none">
-    <span class="nav-name" id="nav-name"></span>
-    <span class="role-pill" id="nav-chip"></span>
-    <button class="btn-nav" onclick="logout()">Keluar</button>
-  </div>
-</nav>
-
-<!-- ════ PAGE AUTH ════ -->
-<div class="page active" id="page-auth">
-  <div class="wrap auth-wrap">
-    <div class="auth-hero">
-      <div class="auth-hero-logo">🎓</div>
-      <h1>Selamat Datang di <span>PresensiQR</span></h1>
-      <p>Sistem absensi cerdas berbasis QR Code dinamis</p>
-    </div>
-    <div class="card">
-      <div class="auth-tabs">
-        <button class="auth-tab active" id="tab-login" onclick="authTab('login')">Masuk</button>
-        <button class="auth-tab" id="tab-reg" onclick="authTab('reg')">Daftar</button>
-      </div>
-      <div id="auth-login">
-        <div class="fg"><label>Email</label><input id="l-email" type="email" placeholder="email@kampus.ac.id"></div>
-        <div class="fg"><label>Password</label><input id="l-pw" type="password" placeholder="••••••••"></div>
-        <button class="btn btn-primary btn-full" onclick="doLogin()"><span class="ls"></span>Masuk ke Sistem</button>
-        <div class="alert" id="l-alert"></div>
-      </div>
-      <div id="auth-reg" style="display:none">
-        <div class="fg"><label>Nama Lengkap</label><input id="r-name" placeholder="Nama sesuai KTP"></div>
-        <div class="fg"><label>Email</label><input id="r-email" type="email" placeholder="email@kampus.ac.id"></div>
-        <div class="fg"><label>Password</label><input id="r-pw" type="password" placeholder="Min. 6 karakter"></div>
-        <div class="fg">
-          <label>Role</label>
-          <select id="r-role" onchange="document.getElementById('nim-wrap').style.display=this.value==='mahasiswa'?'block':'none'">
-            <option value="">— Pilih Role —</option>
-            <option value="mahasiswa">Mahasiswa</option>
-            <option value="dosen">Dosen</option>
-          </select>
-        </div>
-        <div id="nim-wrap" class="fg" style="display:none"><label>NIM</label><input id="r-nim" placeholder="Nomor Induk Mahasiswa"></div>
-        <button class="btn btn-primary btn-full" onclick="doRegister()"><span class="rs"></span>Buat Akun</button>
-        <div class="alert" id="r-alert"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ════ PAGE APP ════ -->
-<div class="page" id="page-app">
-  <div class="wrap">
-    <div class="layout">
-      <div class="sidebar" id="sidebar"></div>
-      <div id="content">
-
-        <!-- DASHBOARD -->
-        <div class="tab-panel active" id="panel-dash">
-          <div class="card">
-            <div class="card-hd"><h2><div class="hd-icon">🏠</div>Dashboard</h2></div>
-            <p class="mut" id="dash-greeting"></p>
-            <hr class="divider">
-            <div class="stats" id="dash-stats"></div>
-            <p class="mut" style="font-size:.8rem;text-align:center;color:var(--txt4)">Pilih menu di sidebar untuk memulai</p>
-          </div>
-        </div>
-
-        <!-- ADMIN USERS -->
-        <div class="tab-panel" id="panel-admin-users">
-          <div class="card">
-            <div class="card-hd"><h2><div class="hd-icon">👤</div>Kelola User</h2></div>
-            <div class="row2">
-              <div>
-                <p style="font-size:.8rem;font-weight:700;color:var(--txt2);margin-bottom:12px">➕ Tambah User Baru</p>
-                <div class="fg"><label>Nama</label><input id="au-name" placeholder="Nama lengkap"></div>
-                <div class="fg"><label>Email</label><input id="au-email" type="email"></div>
-                <div class="fg"><label>Password</label><input id="au-pw" type="password"></div>
-                <div class="fg"><label>Role</label>
-                  <select id="au-role" onchange="document.getElementById('au-nim-wrap').style.display=this.value==='mahasiswa'?'block':'none'">
-                    <option value="">— Pilih —</option>
-                    <option value="mahasiswa">Mahasiswa</option>
-                    <option value="dosen">Dosen</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div id="au-nim-wrap" class="fg" style="display:none"><label>NIM</label><input id="au-nim"></div>
-                <button class="btn btn-primary btn-full" onclick="doAddUser()"><span class="aus"></span>Tambah User</button>
-                <div class="alert" id="au-alert"></div>
-              </div>
-              <div>
-                <p style="font-size:.8rem;font-weight:700;color:var(--txt2);margin-bottom:12px">🔐 Reset Password</p>
-                <div class="fg"><label>Email Target</label><input id="rp-email"></div>
-                <div class="fg"><label>Password Baru</label><input id="rp-pw" type="password"></div>
-                <button class="btn btn-amber btn-full" onclick="doResetPw()"><span class="rps"></span>Reset Password</button>
-                <div class="alert" id="rp-alert"></div>
-                <hr class="divider">
-                <div class="fg"><label>Filter Role</label>
-                  <select id="ul-filter" onchange="loadUserList()">
-                    <option value="">Semua Role</option>
-                    <option value="admin">Admin</option>
-                    <option value="dosen">Dosen</option>
-                    <option value="mahasiswa">Mahasiswa</option>
-                  </select>
-                </div>
-                <button class="btn btn-outline btn-full" onclick="loadUserList()">⟳ Refresh</button>
-              </div>
-            </div>
-            <hr class="divider">
-            <div class="tbl-wrap">
-              <table>
-                <thead><tr><th>#</th><th>Nama</th><th>Email</th><th>Role</th><th>NIM</th><th>Dibuat</th></tr></thead>
-                <tbody id="user-list-tbody"><tr><td colspan="6" class="empty">Klik Refresh</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- SETUP -->
-        <div class="tab-panel" id="panel-setup">
-          <div class="row2">
-            <div class="card">
-              <div class="card-hd"><h2><div class="hd-icon">📚</div>Mata Kuliah</h2></div>
-              <div class="fg"><label>Course ID</label><input id="ci-id" placeholder="cloud-101"></div>
-              <div class="fg"><label>Nama</label><input id="ci-name" placeholder="Praktik Komputasi Awan"></div>
-              <button class="btn btn-primary btn-full" onclick="doCreateCourse()"><span class="ccs"></span>Buat</button>
-              <div class="alert" id="cc-alert"></div>
-              <hr class="divider">
-              <div class="tbl-wrap">
-                <table><thead><tr><th>ID</th><th>Nama</th></tr></thead>
-                <tbody id="course-tbl"><tr><td colspan="2" class="empty">Memuat…</td></tr></tbody></table>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-hd"><h2><div class="hd-icon">📅</div>Sesi</h2></div>
-              <div class="fg"><label>Mata Kuliah</label><select id="ses-csel"><option value="">— Pilih —</option></select></div>
-              <div class="fg"><label>Tanggal</label><input id="ses-date" type="date"></div>
-              <div class="fg"><label>Label</label><input id="ses-label" placeholder="Pertemuan 1"></div>
-              <button class="btn btn-green btn-full" onclick="doCreateSession()"><span class="css2"></span>Buat Sesi</button>
-              <div class="alert" id="cs-alert"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- GENERATE QR -->
-        <div class="tab-panel" id="panel-qr">
-          <div class="card">
-            <div class="card-hd">
-              <h2><div class="hd-icon">🔲</div>Generate QR Token</h2>
-              <span class="card-badge">AUTO CHECKIN ✓</span>
-            </div>
-            <div class="row2">
-              <div class="fg">
-                <label>Mata Kuliah</label>
-                <select id="qr-csel" onchange="loadQrSessions()">
-                  <option value="">— Pilih —</option>
-                </select>
-              </div>
-              <div class="fg">
-                <label>Sesi</label>
-                <select id="qr-ssel"><option value="">— Pilih —</option></select>
-              </div>
-            </div>
-            <button class="btn btn-primary btn-full" onclick="doGenQR()"><span class="gens"></span>⚡ Generate QR Sekarang</button>
-            <div class="alert" id="gen-alert"></div>
-            <div id="qr-box" style="display:none;margin-top:20px">
-              <div class="qr-section">
-                <div class="qr-left">
-                  <div class="qr-frame">
-                    <div class="corner tl"></div><div class="corner tr"></div>
-                    <div class="corner bl"></div><div class="corner br"></div>
-                    <div id="qrcode"></div>
-                    <div class="qr-scan-line" id="qr-scan-line"></div>
-                  </div>
-                </div>
-                <div class="qr-right">
-                  <div class="token-display">
-                    <div class="token-label">Token</div>
-                    <div class="token-val" id="qr-tok">—</div>
-                  </div>
-                  <div class="qr-timer-box">
-                    <div class="timer-ring">
-                      <svg width="48" height="48" viewBox="0 0 48 48">
-                        <circle cx="24" cy="24" r="19" fill="none" stroke="#dde3f5" stroke-width="4"/>
-                        <circle id="timer-arc" cx="24" cy="24" r="19" fill="none"
-                          stroke="url(#tg)" stroke-width="4"
-                          stroke-dasharray="119.38" stroke-dashoffset="0" stroke-linecap="round"/>
-                        <defs><linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stop-color="#4361ee"/>
-                          <stop offset="100%" stop-color="#7b2d8b"/>
-                        </linearGradient></defs>
-                      </svg>
-                      <div class="timer-val" id="timer-pct">100%</div>
-                    </div>
-                    <div class="timer-info">
-                      <div class="timer-countdown" id="qr-timer">02:00</div>
-                      <div class="timer-sub">sisa waktu token aktif</div>
-                    </div>
-                  </div>
-                  <div id="qr-info-pills" style="display:flex;flex-direction:column;gap:8px"></div>
-                  <div class="auto-tag">
-                    <div class="dot-pulse"></div>
-                    Scan langsung auto checkin — tanpa input manual
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- REKAP -->
-        <div class="tab-panel" id="panel-history-all">
-          <div class="card">
-            <div class="card-hd"><h2><div class="hd-icon">📋</div>Rekap Absen</h2></div>
-            <div class="row2">
-              <div class="fg"><label>Mata Kuliah</label><select id="ha-csel" onchange="loadHaSessions()"><option value="">— Pilih —</option></select></div>
-              <div class="fg"><label>Sesi</label><select id="ha-ssel"><option value="">— Pilih —</option></select></div>
-            </div>
-            <button class="btn btn-primary btn-full" onclick="loadHistoryAll()">🔍 Tampilkan Rekap</button>
-            <div class="stats mt3" id="ha-stats" style="display:none">
-              <div class="stat s-grn"><div class="stat-n" id="ha-n">0</div><div class="stat-l">Total Hadir</div></div>
-              <div class="stat s-ind"><div class="stat-n" id="ha-sesi">-</div><div class="stat-l">Sesi</div></div>
-              <div class="stat s-amb"><div class="stat-n" id="ha-tgl">-</div><div class="stat-l">Tanggal</div></div>
-            </div>
-            <div id="recap-map-wrap" style="display:none">
-              <p style="font-size:.78rem;font-weight:700;color:var(--txt3);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.4px">📍 Peta Lokasi Absen</p>
-              <div class="map-wrap"><div id="recap-map" style="height:260px"></div></div>
-            </div>
-            <div class="tbl-wrap mt3">
-              <table>
-                <thead><tr><th>#</th><th>NIM</th><th>Nama</th><th>Jam</th><th>Lokasi</th><th>Accel</th><th>Status</th></tr></thead>
-                <tbody id="ha-tbody"><tr><td colspan="7" class="empty">Pilih sesi</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- SCAN QR -->
-        <div class="tab-panel" id="panel-scan">
-          <!-- STEP 1: VERIFIKASI GERAK -->
-          <div class="card" id="accel-gate-card">
-            <div class="card-hd">
-              <h2><div class="hd-icon">📳</div>Langkah 1 — Verifikasi Gerak</h2>
-              <span class="card-badge" id="accel-gate-badge">BELUM TERVERIFIKASI</span>
-            </div>
-            <p class="mut" style="margin-bottom:14px">
-              Goyangkan handphone Anda minimal <strong>5 detik</strong> untuk membuktikan Anda hadir dan membawa perangkat sendiri.
-            </p>
-            <div class="accel-gate-viz" id="accel-gate-viz">
-              <div class="agv-ring" id="agv-ring">
-                <div class="agv-inner">
-                  <div class="agv-icon" id="agv-icon">📱</div>
-                  <div class="agv-label" id="agv-label">Tekan Mulai</div>
-                </div>
-              </div>
-              <div class="agv-bars">
-                <div class="agv-bar-wrap"><div class="agv-bar" id="agv-bx" style="background:#4361ee"></div><span>X</span></div>
-                <div class="agv-bar-wrap"><div class="agv-bar" id="agv-by" style="background:#06d6a0"></div><span>Y</span></div>
-                <div class="agv-bar-wrap"><div class="agv-bar" id="agv-bz" style="background:#f4a261"></div><span>Z</span></div>
-              </div>
-            </div>
-            <div id="accel-progress-wrap" style="display:none">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                <span style="font-size:.8rem;font-weight:700;color:var(--txt2)">Progress Gerakan</span>
-                <span style="font-family:var(--mono);font-size:.8rem;font-weight:700;color:var(--ind)" id="accel-pct">0%</span>
-              </div>
-              <div style="background:var(--bg2);border-radius:20px;height:10px;overflow:hidden;border:1px solid var(--bdr)">
-                <div id="accel-prog-bar" style="height:100%;width:0%;background:var(--grad);border-radius:20px;transition:width .3s"></div>
-              </div>
-              <p style="font-size:.76rem;color:var(--txt3);margin-top:6px;text-align:center" id="accel-prog-msg">Teruskan menggerakkan perangkat…</p>
-            </div>
-            <div style="display:flex;gap:10px;margin-top:14px">
-              <button class="btn btn-primary btn-full" id="btn-start-gate" onclick="startAccelGate()">📳 Mulai Verifikasi Gerak</button>
-              <button class="btn btn-red" id="btn-stop-gate" style="display:none" onclick="stopAccelGate(false)">⏹ Batal</button>
-            </div>
-            <div class="alert" id="gate-alert"></div>
-          </div>
-
-          <!-- STEP 2: SCAN QR -->
-          <div class="card" id="scan-qr-card" style="opacity:.5;pointer-events:none">
-            <div class="card-hd">
-              <h2><div class="hd-icon">📷</div>Langkah 2 — Scan QR Absen</h2>
-              <span class="card-badge" style="background:rgba(139,145,171,.1);color:var(--txt3);border-color:var(--bdr)" id="scan-lock-badge">🔒 TERKUNCI</span>
-            </div>
-            <p class="mut" style="margin-bottom:16px">Setelah verifikasi gerak berhasil, scan QR yang dosen tampilkan.</p>
-            <div id="accel-gate-lock" style="text-align:center;padding:24px;background:var(--bg);border-radius:10px;margin-bottom:14px;border:1.5px dashed var(--bdr2)">
-              <div style="font-size:2.5rem;margin-bottom:8px">🔒</div>
-              <p style="font-weight:700;color:var(--txt3);font-size:.88rem">Selesaikan verifikasi gerak terlebih dahulu</p>
-            </div>
-            <div style="display:flex;gap:10px;justify-content:center;margin-bottom:16px">
-              <button class="btn btn-green" id="btn-cam" onclick="startScan()">📷 Buka Kamera</button>
-              <button class="btn btn-red" id="btn-stop" style="display:none" onclick="stopScan()">⏹ Stop</button>
-            </div>
-            <div id="qr-reader"></div>
-            <div class="alert" id="cin-alert"></div>
-          </div>
-        </div>
-
-        <!-- MANUAL -->
-        <div class="tab-panel" id="panel-manual">
-          <div class="card">
-            <div class="card-hd"><h2><div class="hd-icon">⌨️</div>Token Manual</h2></div>
-            <p class="mut" style="margin-bottom:16px">Ketik token yang tertera di layar dosen jika kamera tidak tersedia.</p>
-            <div class="fg"><label>QR Token</label>
-              <input id="mt" placeholder="TKN-XXXXXX" style="font-family:var(--mono);font-size:1.1rem;text-transform:uppercase;letter-spacing:2px;text-align:center">
-            </div>
-            <div class="row2">
-              <div class="fg"><label>Course ID</label><input id="mc" placeholder="cloud-101"></div>
-              <div class="fg"><label>Session ID</label><input id="ms" placeholder="SES-XXXXXX"></div>
-            </div>
-            <div class="fg">
-              <label>Lokasi (Opsional)</label>
-              <div class="map-controls">
-                <button class="btn btn-green btn-sm" onclick="getMyLocationManual()">📍 Deteksi GPS</button>
-                <button class="btn btn-outline btn-sm" onclick="toggleManualMap()">🗺️ Pilih di Peta</button>
-              </div>
-              <small class="mut" id="loc-status-m"></small>
-              <div id="manual-map-wrap" style="display:none;margin-top:8px">
-                <div class="map-wrap"><div id="manual-map" style="height:220px"></div>
-                <div class="map-bar" id="manual-map-info">Klik peta untuk memilih lokasi</div></div>
-              </div>
-            </div>
-            <button class="btn btn-primary btn-full mt2" onclick="doCheckinManual()"><span class="mans"></span>✅ Absen Sekarang</button>
-            <div class="alert" id="man-alert"></div>
-          </div>
-        </div>
-
-        <!-- HISTORY MHS -->
-        <div class="tab-panel" id="panel-history-mhs">
-          <div class="card">
-            <div class="card-hd"><h2><div class="hd-icon">📋</div>History Absen Saya</h2></div>
-            <div class="row2">
-              <div class="fg">
-                <label>Mata Kuliah</label>
-                <select id="mh-csel" onchange="loadHistoryMhs()">
-                  <option value="">— Pilih Mata Kuliah —</option>
-                </select>
-              </div>
-              <div style="display:flex;align-items:flex-end;padding-bottom:14px">
-                <button class="btn btn-primary btn-full" onclick="loadHistoryMhs()">🔍 Tampilkan</button>
-              </div>
-            </div>
-            <p class="mut">Total Hadir: <strong id="mh-total" style="color:var(--grn2)">0</strong> pertemuan</p>
-            <div id="mhs-map-wrap" style="display:none;margin-top:10px">
-              <p style="font-size:.78rem;font-weight:700;color:var(--txt3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">📍 Peta Riwayat</p>
-              <div class="map-wrap"><div id="mhs-map" style="height:200px"></div></div>
-            </div>
-            <div class="tbl-wrap mt2">
-              <table>
-                <thead><tr><th>#</th><th>Pertemuan</th><th>Tanggal</th><th>Jam</th><th>Lokasi</th><th>Status</th></tr></thead>
-                <tbody id="mh-tbody"><tr><td colspan="6" class="empty">Pilih mata kuliah</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- ACCELEROMETER -->
-        <div class="tab-panel" id="panel-accel">
-          <div class="card">
-            <div class="card-hd">
-              <h2><div class="hd-icon">📈</div>Accelerometer Live</h2>
-              <span id="ac-live-badge" class="live-badge lb-off"><span class="lb-dot"></span>OFF</span>
-            </div>
-            <p class="mut" style="margin-bottom:14px">Pantau data sensor accelerometer secara realtime dari perangkat Anda.</p>
-
-            <!-- Controls -->
-            <div class="row2" style="align-items:flex-end;margin-bottom:14px">
-              <div class="fg" style="margin:0"><label>Device ID</label><input id="ac-dev" value="web-browser-01"></div>
-              <div style="display:flex;gap:8px">
-                <button class="btn btn-green btn-full" id="btn-ac-start" onclick="startAccel()">▶ Mulai</button>
-                <button class="btn btn-red" id="btn-ac-stop" style="display:none" onclick="stopAccel()">⏹ Stop</button>
-              </div>
-            </div>
-
-            <!-- 3-axis display -->
-            <div class="accel-display">
-              <div class="accel-axis ax-x">
-                <div class="axis-label">X-Axis</div>
-                <div class="axis-val" id="av-x">0.000</div>
-                <div class="axis-unit">m/s²</div>
-              </div>
-              <div class="accel-axis ax-y">
-                <div class="axis-label">Y-Axis</div>
-                <div class="axis-val" id="av-y">0.000</div>
-                <div class="axis-unit">m/s²</div>
-              </div>
-              <div class="accel-axis ax-z">
-                <div class="axis-label">Z-Axis</div>
-                <div class="axis-val" id="av-z">9.810</div>
-                <div class="axis-unit">m/s²</div>
-              </div>
-            </div>
-
-            <!-- Magnitude & status -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-              <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:12px;text-align:center">
-                <div class="axis-label">Magnitude</div>
-                <div class="axis-val" id="av-mag">0.000</div>
-                <div class="axis-unit">m/s²</div>
-              </div>
-              <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:12px;text-align:center">
-                <div class="axis-label">Sumber</div>
-                <div style="font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--txt);margin-top:6px" id="ac-src">—</div>
-                <div class="axis-unit">sensor</div>
-              </div>
-            </div>
-
-            <!-- Mini live chart -->
-            <div class="accel-chart-wrap">
-              <div class="accel-chart-title">📊 Graf Realtime (50 titik terakhir)</div>
-              <canvas id="accel-canvas" height="120"></canvas>
-            </div>
-
-            <p style="font-size:.75rem;color:var(--txt3);margin-bottom:10px;text-align:center">
-              📱 Buka via HTTPS atau localhost agar sensor HP dapat diakses browser
-            </p>
-            <div class="alert" id="ac-alert"></div>
-
-            <!-- Kirim ke server -->
-            <hr class="divider">
-            <p style="font-size:.88rem;font-weight:700;margin-bottom:10px;color:var(--txt2)">☁️ Kirim & Ambil Data Server</p>
-            <div class="row2" style="align-items:flex-end">
-              <div class="fg" style="margin:0"><label>Device ID Query</label><input id="ac-q-dev" placeholder="web-browser-01"></div>
-              <button class="btn btn-primary btn-sm" onclick="fetchAccelLatest()" style="margin-bottom:14px">Ambil Terbaru</button>
-            </div>
-            <div id="accel-latest" class="mut" style="font-family:var(--mono);font-size:.83rem;margin-top:6px;background:var(--bg);border:1px solid var(--bdr);border-radius:8px;padding:10px;min-height:38px">—</div>
-          </div>
-        </div>
-
-        <!-- GPS -->
-        <div class="tab-panel" id="panel-gps">
-          <div class="card">
-            <div class="card-hd"><h2><div class="hd-icon">🗺️</div>GPS Tracking</h2></div>
-            <div class="row2" style="margin-bottom:8px">
-              <div class="fg"><label>Device ID</label><input id="gps-dev" value="web-browser-01"></div>
-              <div style="display:flex;align-items:flex-end;padding-bottom:14px;gap:8px">
-                <button class="btn btn-green" id="btn-gps-start" onclick="startGPS()">▶ Track</button>
-                <button class="btn btn-red" id="btn-gps-stop" style="display:none" onclick="stopGPS()">⏹ Stop</button>
-              </div>
-            </div>
-            <div class="gps-srow">
-              <div class="track-dot" id="track-dot"></div>
-              <span id="gps-status-txt" style="font-family:var(--mono);font-size:.82rem;flex:1">Tidak aktif</span>
-              <span id="gps-acc-badge" style="display:none;font-family:var(--mono);font-size:.7rem;padding:3px 9px;border-radius:20px"></span>
-            </div>
-            <div class="map-wrap">
-              <div id="gps-map" style="height:340px"></div>
-              <div class="map-bar" id="gps-map-bar" style="display:none">
-                <div><span id="gps-coords" style="font-family:var(--mono);font-size:.76rem">—</span><br>
-                <span id="gps-time" style="opacity:.6;font-size:.72rem"></span></div>
-                <a id="gps-gmaps" href="#" target="_blank">🌐 Google Maps</a>
-              </div>
-            </div>
-            <div class="alert" id="gps-alert"></div>
-            <hr class="divider">
-            <p style="font-size:.88rem;font-weight:700;margin-bottom:10px;color:var(--txt2)">📍 Riwayat GPS Server</p>
-            <div class="row2" style="align-items:flex-end">
-              <div class="fg" style="margin:0"><label>Device ID</label><input id="gps-q-dev" placeholder="web-browser-01"></div>
-              <button class="btn btn-primary btn-sm" onclick="fetchGpsHistory()" style="margin-bottom:14px">Ambil & Tampilkan</button>
-            </div>
-            <div id="history-map-wrap" style="display:none;margin-bottom:12px">
-              <p class="mut" style="font-size:.78rem;margin:6px 0 4px">🔵 Polyline &nbsp;•&nbsp; 🟢 Awal &nbsp;•&nbsp; 🔴 Akhir</p>
-              <div class="map-wrap"><div id="gps-history-map" style="height:260px"></div></div>
-            </div>
-            <div class="tbl-wrap mt2">
-              <table>
-                <thead><tr><th>#</th><th>Waktu</th><th>Lat</th><th>Lng</th><th>Akurasi</th><th>Maps</th></tr></thead>
-                <tbody id="gps-hist-tbody"><tr><td colspan="6" class="empty">Masukkan Device ID</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- /content -->
-    </div><!-- /layout -->
-  </div><!-- /wrap -->
-</div><!-- /page-app -->
-
-<!-- ════ MODAL AUTO CHECKIN ════ -->
-<div class="modal-overlay" id="modal-checkin">
-  <div class="modal">
-    <div id="modal-state-gps">
-      <div class="modal-strip ms-ind"></div>
-      <div class="modal-icon mi-ind">📡</div>
-      <h3>QR Terdeteksi!</h3>
-      <p class="modal-sub">Konfirmasi absen untuk sesi berikut</p>
-      <div class="modal-data" id="modal-qr-info"></div>
-      <div class="gps-row">
-        <div class="gps-spin" id="modal-gps-dot"></div>
-        <span id="modal-gps-txt" style="font-size:.82rem;color:var(--txt2)">Mendeteksi lokasi GPS…</span>
-      </div>
-      <div style="display:flex;gap:10px">
-        <button class="btn btn-primary" style="flex:1" id="btn-modal-checkin" onclick="confirmCheckin()"><span class="cins"></span>✅ Absen Sekarang</button>
-        <button class="btn btn-outline" style="padding:10px 14px" onclick="closeModal()">✕</button>
-      </div>
-      <p class="mut" style="font-size:.74rem;text-align:center;margin-top:8px">GPS <strong>wajib</strong> — disimpan otomatis ke server</p>
-    </div>
-    <div id="modal-state-ok" style="display:none">
-      <div class="modal-strip ms-grn"></div>
-      <div class="success-check">
-        <div style="font-size:3.5rem;margin-bottom:10px">✅</div>
-        <h3 style="font-size:1.2rem">Absen Berhasil!</h3>
-        <p class="modal-sub" id="modal-ok-detail"></p>
-        <p style="font-family:var(--mono);font-size:.75rem;color:var(--txt3);margin-bottom:10px" id="modal-ok-id"></p>
-        <div id="modal-ok-gps" style="display:none" class="gps-saved-tag">📍 <span id="modal-ok-gps-txt"></span></div>
-        <div id="modal-ok-accel" style="display:none;margin-top:8px" class="gps-saved-tag">📳 <span id="modal-ok-accel-txt"></span></div>
-        <button class="btn btn-green" style="margin-top:16px" onclick="closeModal()">Tutup</button>
-      </div>
-    </div>
-    <div id="modal-state-err" style="display:none">
-      <div class="modal-strip ms-red"></div>
-      <div class="modal-icon mi-red">❌</div>
-      <h3>Gagal Absen</h3>
-      <p class="modal-sub" id="modal-err-txt"></p>
-      <button class="btn btn-red btn-full" onclick="closeModal()">Tutup</button>
-    </div>
-  </div>
-</div>
-
-<script>
-// ════════════════════════════════════════════
-//  CONFIG
-// ════════════════════════════════════════════
-const BASE_URL = "https://script.google.com/macros/s/AKfycbx85Sb45S4bQ4b_NQVxdizFIWJdah8A-Rqs8nrasFN_6PvLW7lcu7gqzDlSaVzpEC4mjw/exec";
-
-// ════════════════════════════════════════════
-//  QR CANVAS RENDERER (custom, no library)
-// ════════════════════════════════════════════
-function renderQRCanvas(container, text, size) {
-  size = size || 228;
-  if (!text || typeof text !== "string") text = "QR-ERROR";
-
-  function qrEncode(data) {
-    var maxBytes=[17,32,53,78,106], ecWords=[10,16,26,36,48], totalDC=[19,34,55,80,108];
-    var bytes=[];
-    for(var i=0;i<data.length;i++){
-      var cc=data.charCodeAt(i);
-      if(cc<128){bytes.push(cc);}
-      else if(cc<2048){bytes.push((cc>>6)|192);bytes.push((cc&63)|128);}
-      else{bytes.push((cc>>12)|224);bytes.push(((cc>>6)&63)|128);bytes.push((cc&63)|128);}
-    }
-    var ver=0;
-    for(var i=0;i<maxBytes.length;i++){if(bytes.length<=maxBytes[i]){ver=i+1;break;}}
-    if(!ver){ver=5;bytes=bytes.slice(0,maxBytes[4]);}
-    var nEC=ecWords[ver-1],nTotal=totalDC[ver-1],nData=nTotal-nEC;
-    var bits=[];
-    function ab(v,n){for(var i=n-1;i>=0;i--)bits.push((v>>i)&1);}
-    ab(4,4);ab(bytes.length,8);
-    for(var i=0;i<bytes.length;i++) ab(bytes[i],8);
-    ab(0,4);
-    while(bits.length%8)bits.push(0);
-    var dcBytes=[];
-    for(var i=0;i<bits.length;i+=8){var b=0;for(var j=0;j<8;j++)b=(b<<1)|(bits[i+j]||0);dcBytes.push(b);}
-    var pad=[236,17],pi=0;
-    while(dcBytes.length<nData){dcBytes.push(pad[pi]);pi^=1;}
-    var EX=new Uint8Array(512),LG=new Uint8Array(256);
-    (function(){var x=1;for(var i=0;i<255;i++){EX[i]=x;LG[x]=i;x=x<128?x*2:(x*2)^285;}for(var i=255;i<512;i++)EX[i]=EX[i-255];})();
-    function gm(a,b){return(a&&b)?EX[(LG[a]+LG[b])%255]:0;}
-    function genP(n){var g=[1];for(var i=0;i<n;i++){var t=new Array(g.length+1).fill(0);for(var j=0;j<g.length;j++){t[j]^=gm(g[j],1);t[j+1]^=gm(g[j],EX[i]);}g=t;}return g;}
-    function rsEC(d,n){var g=genP(n);var m=d.slice().concat(new Array(n).fill(0));for(var i=0;i<d.length;i++){var c=m[i];if(c)for(var j=0;j<g.length;j++)m[i+j]^=gm(g[j],c);}return m.slice(d.length);}
-    var ecBytes=rsEC(dcBytes,nEC);
-    var allBytes=dcBytes.concat(ecBytes);
-    var allBits=[];
-    for(var i=0;i<allBytes.length;i++) for(var j=7;j>=0;j--) allBits.push((allBytes[i]>>j)&1);
-    return {bits:allBits,ver:ver};
+// Konfigurasi Global
+const CONFIG = {
+  TOKEN_TTL_MS: 120000,
+  SHEETS: {
+    tokens:   ["qr_token", "course_id", "session_id", "created_at", "expires_at", "used"],
+    presence: ["presence_id", "user_id", "nim", "device_id", "course_id", "session_id", "qr_token", "ts", "recorded_at"],
+    accel:    ["device_id", "x", "y", "z", "sample_ts", "batch_ts", "recorded_at"],
+    gps:      ["device_id", "lat", "lng", "accuracy", "altitude", "ts", "recorded_at"]
   }
-
-  var enc=qrEncode(text),ver=enc.ver,allBits=enc.bits,N=ver*4+17;
-  var M=[];
-  for(var i=0;i<N;i++) M.push(new Int8Array(N).fill(-1));
-  function set(r,c,v){if(r>=0&&r<N&&c>=0&&c<N&&M[r][c]<0)M[r][c]=v;}
-  function force(r,c,v){if(r>=0&&r<N&&c>=0&&c<N)M[r][c]=v;}
-  function finder(tr,tc){
-    for(var r=0;r<7;r++) for(var c=0;c<7;c++){
-      force(tr+r,tc+c,(r===0||r===6||c===0||c===6||(r>=2&&r<=4&&c>=2&&c<=4))?1:0);
-    }
-    for(var i=-1;i<=7;i++){force(tr-1,tc+i,0);force(tr+7,tc+i,0);force(tr+i,tc-1,0);force(tr+i,tc+7,0);}
-  }
-  finder(0,0);finder(0,N-7);finder(N-7,0);
-  var alignPos={1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30]};
-  var ap=alignPos[ver]||[];
-  for(var ai=0;ai<ap.length;ai++) for(var aj=0;aj<ap.length;aj++){
-    var r=ap[ai],c=ap[aj];
-    if(M[r][c]>=0) continue;
-    for(var dr=-2;dr<=2;dr++) for(var dc=-2;dc<=2;dc++)
-      force(r+dr,c+dc,(dr===-2||dr===2||dc===-2||dc===2||(dr===0&&dc===0))?1:0);
-  }
-  for(var i=8;i<N-8;i++){if(M[6][i]<0)M[6][i]=i%2===0?1:0;if(M[i][6]<0)M[i][6]=i%2===0?1:0;}
-  force(N-8,8,1);
-  for(var i=0;i<9;i++){if(M[8][i]<0)M[8][i]=0;if(M[i][8]<0)M[i][8]=0;}
-  for(var i=N-8;i<N;i++){if(M[8][i]<0)M[8][i]=0;if(M[i][8]<0)M[i][8]=0;}
-  var bi=0;
-  for(var col=N-1;col>=1;col-=2){
-    if(col===6) col--;
-    for(var ri=0;ri<N;ri++){
-      var row=((N-1-col)&2)?ri:N-1-ri;
-      for(var d=0;d<2;d++){
-        var c=col-d;
-        if(M[row][c]<0&&bi<allBits.length){M[row][c]=allBits[bi]^((row+c)%2===0?1:0);bi++;}
-      }
-    }
-  }
-  for(var r=0;r<N;r++) for(var c=0;c<N;c++) if(M[r][c]<0) M[r][c]=0;
-  var fmtStr=[1,0,1,0,1,0,0,0,0,0,1,0,0,1,0];
-  var fmtH=[0,1,2,3,4,5,7,8,N-7,N-6,N-5,N-4,N-3,N-2,N-1];
-  var fmtV=[0,1,2,3,4,5,7,8,N-8,N-7,N-6,N-5,N-4,N-3,N-2];
-  for(var i=0;i<15;i++){force(8,fmtH[i],fmtStr[i]);force(fmtV[i],8,fmtStr[14-i]);}
-  var pad2=16,cell=Math.floor((size-pad2*2)/N),total=N*cell+pad2*2;
-  var canvas=document.createElement("canvas");
-  canvas.width=total;canvas.height=total;
-  canvas.style.cssText="display:block;border-radius:8px;image-rendering:pixelated;image-rendering:crisp-edges";
-  var ctx=canvas.getContext("2d");
-  ctx.fillStyle="#FFFFFF";ctx.fillRect(0,0,total,total);
-  ctx.fillStyle="#000000";
-  for(var r=0;r<N;r++) for(var c=0;c<N;c++)
-    if(M[r][c]===1) ctx.fillRect(pad2+c*cell,pad2+r*cell,cell,cell);
-  container.appendChild(canvas);
-}
-
-// ════════════════════════════════════════════
-//  GLOBALS
-// ════════════════════════════════════════════
-let S = {}, qrTimer = null, scanner = null;
-let accelTimer = null, accelActive = false, accelBatch = [];
-let accelHistory = { x:[], y:[], z:[], mag:[] }; // for mini chart
-const ACCEL_MAX_PTS = 50;
-let gpsWatcher = null, pendingCheckin = null, pendingGps = null, gpsTimeoutId = null;
-let gateActive = false, gateVerified = false, gateTimer = null;
-let gateAccumMove = 0, gateLastX = null, gateLastY = null, gateLastZ = null;
-let gateSamples = [], gateMotionHandler = null;
-const GATE_NEEDED = 5.0;
-const MAPS = {}, TILE = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>';
-const DEF_C = [-7.2575, 112.7521];
-
-function mkIcon(c,s=28){return L.divIcon({className:"",html:`<div style="background:${c};width:${s}px;height:${s}px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 12px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:${s*.36}px">📍</div>`,iconSize:[s,s],iconAnchor:[s/2,s/2],popupAnchor:[0,-s/2]})}
-function mkDot(c){return L.divIcon({className:"",html:`<div style="background:${c};width:9px;height:9px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)"></div>`,iconSize:[9,9],iconAnchor:[4,4]})}
-const IC_IND=mkIcon("#4361ee"),IC_GRN=mkIcon("#06d6a0",26),IC_RED=mkIcon("#ef233c",26),IC_PUR=mkIcon("#7b2d8b");
-
-// ════════════════════════════════════════════
-//  SIDEBAR MENUS
-// ════════════════════════════════════════════
-const MENUS = {
-  admin:[
-    {icon:"🏠",lbl:"Dashboard",panel:"dash"},
-    {sep:"Admin"},{icon:"👤",lbl:"Kelola User",panel:"admin-users",fn:loadUserList},
-    {sep:"Akademik"},{icon:"⚙️",lbl:"Setup Kelas",panel:"setup",fn:loadSetup},
-    {icon:"🔲",lbl:"Generate QR",panel:"qr",fn:loadQrCourses},
-    {icon:"📋",lbl:"Rekap Absen",panel:"history-all",fn:loadHaCourses},
-    {sep:"Sensor"},{icon:"📈",lbl:"Accelerometer",panel:"accel"},
-    {icon:"🗺️",lbl:"GPS Tracking",panel:"gps",fn:initGpsPanel}
-  ],
-  dosen:[
-    {icon:"🏠",lbl:"Dashboard",panel:"dash"},
-    {sep:"Akademik"},{icon:"⚙️",lbl:"Setup Kelas",panel:"setup",fn:loadSetup},
-    {icon:"🔲",lbl:"Generate QR",panel:"qr",fn:loadQrCourses},
-    {icon:"📋",lbl:"Rekap Absen",panel:"history-all",fn:loadHaCourses},
-    {sep:"Sensor"},{icon:"📈",lbl:"Accelerometer",panel:"accel"},
-    {icon:"🗺️",lbl:"GPS Tracking",panel:"gps",fn:initGpsPanel}
-  ],
-  mahasiswa:[
-    {icon:"🏠",lbl:"Dashboard",panel:"dash"},
-    {sep:"Presensi"},{icon:"📷",lbl:"Scan QR",panel:"scan"},
-    {icon:"⌨️",lbl:"Token Manual",panel:"manual",fn:loadMhsCourses},
-    {icon:"📋",lbl:"History Saya",panel:"history-mhs",fn:loadMhsCourses},
-    {sep:"Sensor"},{icon:"📈",lbl:"Accelerometer",panel:"accel"},
-    {icon:"🗺️",lbl:"GPS Tracking",panel:"gps",fn:initGpsPanel}
-  ]
 };
 
-// ════════════════════════════════════════════
-//  API
-// ════════════════════════════════════════════
-async function api(path, data = {}) {
-  const body = { path, ...data };
-  if (S.token) body.auth_token = S.token;
+/**
+ * PINTU MASUK UTAMA (GET)
+ */
+function doGet(e) {
+  const path = (e.parameter && e.parameter.path) || "dashboard";
+  const params = e.parameter;
+
+  // Router Map untuk GET
+  const routes = {
+    "telemetry/gps/latest":   () => apiHandler(() => handleGetGpsLatest(params.device_id)),
+    "telemetry/gps/marker":   () => apiHandler(() => handleGetGpsMarker(params.device_id)),
+    "telemetry/gps/polyline": () => apiHandler(() => handleGetGpsPolyline(params)),
+    "telemetry/accel/latest": () => apiHandler(() => handleGetAccelLatest(params.device_id)),
+    "sensor/accel/latest":    () => apiHandler(() => handleGetAccelLatest(params.device_id)),
+    "telemetry/accel/history":() => apiHandler(() => handleGetAccelHistory(params)),
+    "sensor/accel/history":   () => apiHandler(() => handleGetAccelHistory(params)),
+    "presence/status":        () => apiHandler(() => handleGetPresenceStatus(params)),
+    "presence/qr/status":     () => apiHandler(() => handleCheckQRStatus(params.qr_token)),
+    "admin/presence/list":    () => apiHandler(() => handleGetPresenceList(params.course_id, params.session_id)),
+    "sensor/gps/logs":        () => apiHandler(() => handleGetAllGpsLogs()),
+    
+    // HTML Routes
+    "dashboard":              () => renderHtml("Dashboard", "Dashboard Utama"),
+    "admin":                  () => renderHtml("Admin", "Admin Presensi QR"),
+    "accelerometer":          () => renderHtml("Accelerometer", "Sensor Accelerometer"),
+    "client":                 () => renderHtml("Client", "Portal Presensi Mahasiswa")
+  };
+
+  return routes[path] ? routes[path]() : sendError("Route not found", 404);
+}
+
+/**
+ * PINTU MASUK UTAMA (POST)
+ */
+function doPost(e) {
+  const path = (e.parameter && e.parameter.path) || "";
+  let body;
+
   try {
-    const r = await fetch(BASE_URL, {
-      method: "POST",
-      body: JSON.stringify(body),
-      headers: { "Content-Type": "text/plain" }
-    });
-    const txt = await r.text();
-    return JSON.parse(txt);
-  } catch(e1) {
-    try {
-      const encoded = encodeURIComponent(JSON.stringify(body));
-      const url = BASE_URL + "?body=" + encoded + "&path=" + encodeURIComponent(path);
-      const r2 = await fetch(url, { mode: "cors" });
-      return JSON.parse(await r2.text());
-    } catch(e2) {
-      return { ok: false, error: "Koneksi gagal. Pastikan deploy GAS sudah 'Anyone'. Error: " + e1.message };
+    body = JSON.parse(e.postData.contents);
+  } catch (err) {
+    return sendError("Invalid JSON body");
+  }
+
+  // Router Map untuk POST
+  const routes = {
+    "presence/qr/generate":  () => apiHandler(() => handleGenerateQR(body)),
+    "presence/checkin":      () => apiHandler(() => handleCheckin(body)),
+    "telemetry/accel":       () => apiHandler(() => handlePostAccelTelemetry(body)),
+    "sensor/accel/batch":    () => apiHandler(() => handlePostAccelTelemetry(body)),
+    "telemetry/gps":         () => apiHandler(() => handlePostGpsTelemetry(body)),
+    "admin/presence/delete": () => apiHandler(() => handleDeletePresence(body))
+  };
+
+  return routes[path] ? routes[path]() : sendError("Route not found", 404);
+}
+
+// =============================================================
+// HANDLERS: TELEMETRY (GPS & ACCELEROMETER)
+// =============================================================
+
+function handlePostGpsTelemetry(body) {
+  const { device_id, lat, lng, accuracy_m, accuracy, ts } = body;
+  if (!device_id || lat === undefined || lng === undefined) throw new Error("Missing GPS data");
+  
+  const sheet = getOrCreateSheet("gps");
+  sheet.appendRow([
+    String(device_id), lat, lng, 
+    accuracy_m || accuracy || null, null, 
+    ts || new Date().toISOString(), new Date().toISOString()
+  ]);
+  return { accepted: true, device_id };
+}
+
+function handleGetGpsLatest(deviceId) {
+  if (!deviceId) throw new Error("Missing device_id");
+  const data = getOrCreateSheet("gps").getDataRange().getValues();
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][0]) === deviceId) {
+      return { ts: data[i][5], lat: data[i][1], lng: data[i][2], accuracy_m: data[i][3] };
     }
   }
+  throw new Error("No GPS data found");
 }
 
-// ════════════════════════════════════════════
-//  HELPERS
-// ════════════════════════════════════════════
-const $ = id => document.getElementById(id);
-const _v = id => $(id) ? $(id).value.trim() : "";
+function handleGetGpsPolyline(params) {
+  const { device_id, from, to } = params;
+  if (!device_id || !from || !to) throw new Error("Missing device_id, from, or to");
+  
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+  const data = getOrCreateSheet("gps").getDataRange().getValues();
+  
+  const points = data.slice(1)
+    .filter(row => {
+      const ts = new Date(row[5]);
+      return String(row[0]) === device_id && ts >= fromDate && ts <= toDate;
+    })
+    .map(row => ({ lat: row[1], lng: row[2], ts: row[5] }));
 
-function showAlert(id, msg, type = "err") {
-  const el = $(id);
-  if (!el) return;
-  el.textContent = msg;
-  el.className = `alert show a-${type}`;
-  if (type !== "info") setTimeout(() => { if(el) el.className = "alert"; }, 6000);
-}
-function setSpin(id, on) {
-  const el = $(id);
-  if (el) el.innerHTML = on ? '<span class="spinner"></span>&nbsp;' : "";
-}
-function fmtDt(ts) {
-  if (!ts) return "-";
-  try { return new Date(ts).toLocaleString("id-ID", { dateStyle:"short", timeStyle:"short" }); }
-  catch { return ts; }
-}
-function fmtTime(ts) {
-  if (!ts) return "-";
-  try { return new Date(ts).toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", second:"2-digit" }); }
-  catch { return ts; }
+  return { device_id, from, to, total_points: points.length, points };
 }
 
-// ════════════════════════════════════════════
-//  AUTH
-// ════════════════════════════════════════════
-function authTab(t) {
-  $("auth-login").style.display = t === "login" ? "block" : "none";
-  $("auth-reg").style.display   = t === "reg"   ? "block" : "none";
-  $("tab-login").className = "auth-tab" + (t === "login" ? " active" : "");
-  $("tab-reg").className   = "auth-tab" + (t === "reg"   ? " active" : "");
+function handlePostAccelTelemetry(body) {
+  const { device_id, ts, samples, data } = body;
+  const accelData = samples || data;
+  if (!device_id || !Array.isArray(accelData) || accelData.length === 0) throw new Error("Invalid samples");
+
+  const batchTs = ts || new Date().toISOString();
+  const recordedAt = new Date().toISOString();
+  
+  const rows = accelData.map(s => [
+    String(device_id), 
+    Number(s.x || 0), Number(s.y || 0), Number(s.z || 0), 
+    String(s.t || s.ts || ""), 
+    batchTs, 
+    recordedAt
+  ]);
+
+  const sheet = getOrCreateSheet("accel");
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+  return { accepted: rows.length, device_id };
 }
 
-async function doRegister() {
-  const name = _v("r-name"), email = _v("r-email"), password = _v("r-pw");
-  const role = $("r-role").value, nim = _v("r-nim");
-  if (!name || !email || !password || !role) return showAlert("r-alert", "Semua field wajib diisi.");
-  setSpin("rs", true);
-  const r = await api("auth/register", { name, email, password, role, nim });
-  setSpin("rs", false);
-  if (!r.ok) return showAlert("r-alert", r.error);
-  showAlert("r-alert", "✅ Registrasi berhasil! Silakan login.", "ok");
+function handleGetAccelLatest(deviceId) {
+  if (!deviceId) throw new Error("Missing device_id");
+  const data = getOrCreateSheet("accel").getDataRange().getValues();
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][0]) === deviceId) {
+      return { t: data[i][4] || data[i][5], x: data[i][1], y: data[i][2], z: data[i][3] };
+    }
+  }
+  throw new Error("No accelerometer data found");
 }
 
-async function doLogin() {
-  const email = _v("l-email"), password = _v("l-pw");
-  if (!email || !password) return showAlert("l-alert", "Isi email dan password.");
-  setSpin("ls", true);
-  const r = await api("auth/login", { email, password });
-  setSpin("ls", false);
-  if (!r.ok) return showAlert("l-alert", r.error);
-  S = {
-    token  : r.data.token,
-    user_id: r.data.user_id,
-    name   : r.data.name,
-    role   : r.data.role,
-    nim    : r.data.nim
-  };
-  sessionStorage.setItem("ps", JSON.stringify(S));
-  afterLogin();
+function handleGetAccelHistory(params) {
+  const deviceId = params.device_id;
+  const limit = parseInt(params.limit) || 50;
+  if (!deviceId) throw new Error("Missing device_id");
+
+  const data = getOrCreateSheet("accel").getDataRange().getValues();
+  let items = data.slice(1)
+    .filter(row => String(row[0]) === deviceId)
+    .map(row => ({ x: row[1], y: row[2], z: row[3], t: row[4] || row[5] }));
+
+  if (items.length > limit) items = items.slice(-limit);
+  return { device_id: deviceId, items };
 }
 
-function afterLogin() {
-  $("nav-user").style.display = "flex";
-  $("nav-name").textContent   = S.name;
-  const chip = $("nav-chip");
-  chip.textContent  = S.role === "admin" ? "Admin" : S.role === "dosen" ? "Dosen" : "Mahasiswa";
-  chip.className    = "role-pill rp-" + S.role;
-  buildSidebar();
-  showPage("page-app");
-  showPanel("dash");
-  buildDash();
+// =============================================================
+// HANDLERS: PRESENCE & QR
+// =============================================================
+
+function handleGenerateQR(body) {
+  if (!body.course_id || !body.session_id) throw new Error("Missing course_id or session_id");
+  
+  const now = new Date();
+  const token = "TKN-" + Utilities.getUuid().substring(0, 6).toUpperCase();
+  const expiresAt = new Date(now.getTime() + CONFIG.TOKEN_TTL_MS).toISOString();
+  
+  getOrCreateSheet("tokens").appendRow([
+    token, body.course_id, body.session_id, now.toISOString(), expiresAt, "false"
+  ]);
+  return { qr_token: token, expires_at: expiresAt };
 }
 
-function logout() {
-  S = {};
-  sessionStorage.removeItem("ps");
-  $("nav-user").style.display = "none";
-  stopScan();
-  stopAccel();
-  stopGPS();
-  Object.values(MAPS).forEach(m => { try { m.remove(); } catch(e){} });
-  for (const k in MAPS) delete MAPS[k];
-  showPage("page-auth");
+function handleCheckin(body) {
+  const { user_id, device_id, course_id, session_id, qr_token, ts } = body;
+  if (!user_id || !qr_token || !course_id || !session_id) throw new Error("Missing required fields");
+
+  const tokenSheet = getOrCreateSheet("tokens");
+  const tokenData = tokenSheet.getDataRange().getValues();
+  
+  // Cari token (dari bawah ke atas untuk performa)
+  let tokenRec = null;
+  for (let i = tokenData.length - 1; i >= 1; i--) {
+    if (String(tokenData[i][0]) === qr_token) {
+      tokenRec = { 
+        course_id: String(tokenData[i][1]), 
+        session_id: String(tokenData[i][2]), 
+        expires_at: tokenData[i][4] 
+      };
+      break;
+    }
+  }
+
+  if (!tokenRec) throw new Error("token_invalid");
+  if (new Date(tokenRec.expires_at) < new Date()) throw new Error("token_expired");
+  if (course_id !== tokenRec.course_id || session_id !== tokenRec.session_id) throw new Error("token_course_session_mismatch");
+
+  const presSheet = getOrCreateSheet("presence");
+  const isDuplicate = presSheet.getDataRange().getValues().some(row => 
+    String(row[1]) === user_id && String(row[4]) === course_id && String(row[5]) === session_id
+  );
+  if (isDuplicate) throw new Error("user_already_checked_in");
+
+  const presenceId = "PR-" + Utilities.getUuid().substring(0, 4).toUpperCase();
+  const recordedAt = new Date().toISOString();
+  presSheet.appendRow([
+    presenceId, user_id, user_id, device_id, course_id, session_id, 
+    qr_token, ts || recordedAt, recordedAt
+  ]);
+
+  return { presence_id: presenceId, status: "checked_in", user_id, course_id, session_id };
 }
 
-// ════════════════════════════════════════════
-//  SESSION RESTORE — hanya sekali
-// ════════════════════════════════════════════
-(function initApp() {
+function handleGetPresenceStatus(params) {
+  const { user_id, course_id, session_id } = params;
+  if (!user_id || !course_id || !session_id) throw new Error("Missing params");
+
+  const data = getOrCreateSheet("presence").getDataRange().getValues();
+  const record = data.find(r => 
+    String(r[1]).toLowerCase() === user_id.toLowerCase() && 
+    String(r[4]).toLowerCase() === course_id.toLowerCase() && 
+    String(r[5]).toLowerCase() === session_id.toLowerCase()
+  );
+
+  return record ? 
+    { user_id, course_id, session_id, status: "checked_in", last_ts: record[7] } : 
+    { user_id, course_id, session_id, status: "not_checked_in", last_ts: null };
+}
+
+function handleCheckQRStatus(token) {
+  if (!token) throw new Error("Missing qr_token");
+  const data = getOrCreateSheet("tokens").getDataRange().getValues();
+  const found = data.find(r => String(r[0]) === token);
+  if (!found) throw new Error("token_not_found");
+  return { qr_token: token, used: String(found[5]) === "true" };
+}
+
+// =============================================================
+// HANDLERS: ADMIN
+// =============================================================
+
+function handleGetPresenceList(courseId, sessionId) {
+  if (!courseId || !sessionId) throw new Error("Missing course_id or session_id");
+  const data = getOrCreateSheet("presence").getDataRange().getValues();
+  return data.slice(1)
+    .filter(r => String(r[4]) === courseId && String(r[5]) === sessionId)
+    .map(r => ({
+      presence_id: r[0], user_id: r[1], nim: r[2], device_id: r[3],
+      course_id: r[4], session_id: r[5], qr_token: r[6], waktu: r[7], recorded_at: r[8]
+    }));
+}
+
+function handleGetAllGpsLogs() {
+  const data = getOrCreateSheet("gps").getDataRange().getValues();
+  return data.slice(1).reverse().map(r => ({
+    device_id: r[0], lat: r[1], lng: r[2], waktu: r[5]
+  }));
+}
+
+function handleDeletePresence(body) {
+  const { nim, course_id, session_id } = body;
+  if (!nim || !course_id || !session_id) throw new Error("Missing nim, course_id, or session_id");
+  
+  const sheet = getOrCreateSheet("presence");
+  const data = sheet.getDataRange().getValues();
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][2]) === nim && String(data[i][4]) === course_id && String(data[i][5]) === session_id) {
+      sheet.deleteRow(i + 1);
+      return { deleted: true, nim };
+    }
+  }
+  throw new Error("Record not found");
+}
+
+function handleGetGpsMarker(deviceId) {
+  if (!deviceId) throw new Error("Missing device_id");
+  const data = getOrCreateSheet("gps").getDataRange().getValues();
+  const row = data.reverse().find(r => String(r[0]) === deviceId);
+  if (!row) throw new Error("No GPS data found");
+  return { device_id: row[0], lat: row[1], lng: row[2], accuracy: row[3], altitude: row[4], ts: row[5] };
+}
+
+// =============================================================
+// HELPERS (CORE UTILITIES)
+// =============================================================
+
+/**
+ * Membungkus eksekusi API untuk standardisasi response ok/error
+ */
+function apiHandler(fn) {
   try {
-    const s = sessionStorage.getItem("ps");
-    if (s) {
-      const parsed = JSON.parse(s);
-      if (parsed && parsed.token) {
-        S = parsed;
-        afterLogin();
-      }
+    const result = fn();
+    return sendSuccess(result);
+  } catch (err) {
+    return sendError(err.message);
+  }
+}
+
+function getOrCreateSheet(name) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    const headers = CONFIG.SHEETS[name];
+    if (headers) {
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      sheet.setFrozenRows(1);
     }
-  } catch(e) {}
-})();
-
-// ════════════════════════════════════════════
-//  PAGE & PANEL
-// ════════════════════════════════════════════
-function showPage(id) {
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  $(id).classList.add("active");
-}
-
-function showPanel(id, fn) {
-  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".sb-btn").forEach(b => b.classList.remove("active"));
-  const p = $("panel-" + id);
-  if (p) p.classList.add("active");
-  const b = $("sb-" + id);
-  if (b) b.classList.add("active");
-  if (fn) fn();
-  setTimeout(() => Object.values(MAPS).forEach(m => { try { m.invalidateSize(); } catch(e){} }), 120);
-}
-
-function buildSidebar() {
-  const sb = $("sidebar");
-  sb.innerHTML = "";
-  (MENUS[S.role] || []).forEach(m => {
-    if (m.sep) {
-      const l = document.createElement("div");
-      l.className = "sb-sep";
-      l.textContent = m.sep;
-      sb.appendChild(l);
-    } else {
-      const b = document.createElement("button");
-      b.className = "sb-btn";
-      b.id = "sb-" + m.panel;
-      b.innerHTML = `<div class="sb-icon">${m.icon}</div>${m.lbl}`;
-      b.onclick = () => showPanel(m.panel, m.fn || null);
-      sb.appendChild(b);
-    }
-  });
-}
-
-function buildDash() {
-  $("dash-greeting").innerHTML = `Halo, <strong>${S.name}</strong>! Role: <span class="badge b-${S.role}">${S.role}</span>` +
-    (S.nim ? ` &nbsp; NIM: <code>${S.nim}</code>` : "");
-  $("dash-stats").innerHTML = S.role === "mahasiswa"
-    ? `<div class="stat s-grn"><div class="stat-n">—</div><div class="stat-l">Total Hadir</div></div><div class="stat s-ind"><div class="stat-n">—</div><div class="stat-l">Mata Kuliah</div></div><div class="stat s-amb"><div class="stat-n">—</div><div class="stat-l">Device</div></div>`
-    : `<div class="stat s-grn"><div class="stat-n">—</div><div class="stat-l">Matkul</div></div><div class="stat s-ind"><div class="stat-n">—</div><div class="stat-l">Sesi</div></div><div class="stat s-amb"><div class="stat-n">—</div><div class="stat-l">Mahasiswa</div></div>`;
-}
-
-// ════════════════════════════════════════════
-//  ADMIN
-// ════════════════════════════════════════════
-async function doAddUser() {
-  const name=_v("au-name"),email=_v("au-email"),password=_v("au-pw"),role=$("au-role").value,nim=_v("au-nim");
-  if(!name||!email||!password||!role)return showAlert("au-alert","Semua field wajib.");
-  setSpin("aus",true);
-  const r=await api("admin/add-user",{name,email,password,role,nim});
-  setSpin("aus",false);
-  if(!r.ok)return showAlert("au-alert",r.error);
-  showAlert("au-alert",`✅ ${r.data.name} (${r.data.role}) ditambahkan.`,"ok");
-  ["au-name","au-email","au-pw","au-nim"].forEach(id=>$(id)&&($(id).value=""));
-  $("au-role").value="";
-  loadUserList();
-}
-
-async function doResetPw() {
-  const te=_v("rp-email"),np=_v("rp-pw");
-  if(!te||!np)return showAlert("rp-alert","Isi email dan password baru.");
-  setSpin("rps",true);
-  const r=await api("admin/reset-password",{target_email:te,new_password:np});
-  setSpin("rps",false);
-  if(!r.ok)return showAlert("rp-alert",r.error);
-  showAlert("rp-alert","✅ Password direset.","ok");
-}
-
-async function loadUserList() {
-  const role=$("ul-filter").value;
-  const r=await api("admin/list-users",role?{role}:{});
-  if(!r.ok)return;
-  const items=r.data.items||[];
-  const rc={admin:"b-adm",dosen:"b-dos",mahasiswa:"b-mhs"};
-  $("user-list-tbody").innerHTML=items.length===0
-    ?'<tr><td colspan="6" class="empty">Tidak ada user</td></tr>'
-    :items.map((u,i)=>`<tr><td>${i+1}</td><td><strong>${u.name}</strong></td><td style="font-size:.8rem;color:var(--txt2)">${u.email}</td><td><span class="badge ${rc[u.role]||""}">${u.role}</span></td><td><code>${u.nim||"-"}</code></td><td style="color:var(--txt3);font-size:.8rem">${fmtDt(u.created_at)}</td></tr>`).join("");
-}
-
-// ════════════════════════════════════════════
-//  COURSES — FIX: populate semua dropdown sekaligus
-// ════════════════════════════════════════════
-async function loadCourses() {
-  const r = await api("courses");
-  if (!r.ok) return [];
-  return r.data.items || [];
-}
-
-function populateCourseSelect(elId, items, placeholder = "— Pilih —") {
-  const el = $(elId);
-  if (!el) return;
-  el.innerHTML = `<option value="">${placeholder}</option>`;
-  items.forEach(c => {
-    el.innerHTML += `<option value="${c.course_id}">${c.course_name} (${c.course_id})</option>`;
-  });
-}
-
-async function loadSetup() {
-  const items = await loadCourses();
-  // Populate dropdown di panel setup
-  populateCourseSelect("ses-csel", items);
-  // Update table
-  $("course-tbl").innerHTML = items.length === 0
-    ? '<tr><td colspan="2" class="empty">Belum ada matkul</td></tr>'
-    : items.map(c => `<tr><td><code>${c.course_id}</code></td><td><strong>${c.course_name}</strong></td></tr>`).join("");
-}
-
-async function loadQrCourses() {
-  const items = await loadCourses();
-  populateCourseSelect("qr-csel", items);
-  $("qr-ssel").innerHTML = '<option value="">— Pilih —</option>';
-}
-
-async function loadHaCourses() {
-  const items = await loadCourses();
-  populateCourseSelect("ha-csel", items);
-  $("ha-ssel").innerHTML = '<option value="">— Pilih —</option>';
-}
-
-// FIX: mahasiswa juga bisa load courses (endpoint GET courses tersedia untuk semua role)
-async function loadMhsCourses() {
-  const items = await loadCourses();
-  populateCourseSelect("mh-csel", items, "— Pilih Mata Kuliah —");
-}
-
-async function doCreateCourse() {
-  const cid=_v("ci-id"),cn=_v("ci-name");
-  if(!cid||!cn)return showAlert("cc-alert","Isi semua field.");
-  setSpin("ccs",true);
-  const r=await api("courses/create",{course_id:cid,course_name:cn});
-  setSpin("ccs",false);
-  if(!r.ok)return showAlert("cc-alert",r.error);
-  showAlert("cc-alert","✅ Mata kuliah dibuat!","ok");
-  $("ci-id").value=$("ci-name").value="";
-  loadSetup();
-}
-
-async function doCreateSession() {
-  const cid=$("ses-csel").value,date=_v("ses-date"),label=_v("ses-label");
-  if(!cid||!date||!label)return showAlert("cs-alert","Isi semua field.");
-  setSpin("css2",true);
-  const r=await api("sessions/create",{course_id:cid,date,label});
-  setSpin("css2",false);
-  if(!r.ok)return showAlert("cs-alert",r.error);
-  showAlert("cs-alert","✅ Sesi dibuat! ID: "+r.data.session_id,"ok");
-  $("ses-date").value=$("ses-label").value="";
-}
-
-// ════════════════════════════════════════════
-//  QR SESSIONS
-// ════════════════════════════════════════════
-async function loadQrSessions() {
-  const cid = $("qr-csel").value;
-  if (!cid) return;
-  const r = await api("sessions", { course_id: cid });
-  const el = $("qr-ssel");
-  el.innerHTML = '<option value="">— Pilih Sesi —</option>';
-  if (r.ok) r.data.items.forEach(s =>
-    el.innerHTML += `<option value="${s.session_id}">${s.label} — ${s.date} (${s.session_id})</option>`
-  );
-}
-
-async function loadHaSessions() {
-  const cid = $("ha-csel").value;
-  if (!cid) return;
-  const r = await api("sessions", { course_id: cid });
-  const el = $("ha-ssel");
-  el.innerHTML = '<option value="">— Pilih Sesi —</option>';
-  if (r.ok) r.data.items.forEach(s =>
-    el.innerHTML += `<option value="${s.session_id}">${s.label} — ${s.date} (${s.session_id})</option>`
-  );
-}
-
-// ════════════════════════════════════════════
-//  GENERATE QR
-// ════════════════════════════════════════════
-const QR_TOTAL = 120;
-
-async function doGenQR() {
-  const cid = $("qr-csel").value, sid = $("qr-ssel").value;
-  if (!cid || !sid) return showAlert("gen-alert", "Pilih mata kuliah dan sesi.");
-  setSpin("gens", true);
-  const r = await api("presence/qr/generate", { course_id: cid, session_id: sid, ts: new Date().toISOString() });
-  setSpin("gens", false);
-  if (!r.ok) return showAlert("gen-alert", r.error);
-
-  const { qr_token, qr_payload, expires_at } = r.data;
-  $("qr-tok").textContent = qr_token;
-  $("qr-box").style.display = "block";
-
-  const qDiv = $("qrcode");
-  qDiv.innerHTML = "";
-  qDiv.style.cssText = "display:flex;align-items:center;justify-content:center;background:#fff;border-radius:10px;overflow:hidden;min-width:228px;min-height:228px";
-  const qrContent = (qr_payload && typeof qr_payload === "string" && qr_payload.length > 0)
-    ? qr_payload
-    : JSON.stringify({ qr_token, course_id: cid, session_id: sid });
-  renderQRCanvas(qDiv, qrContent, 228);
-
-  $("qr-info-pills").innerHTML = `
-    <div class="info-pill"><div class="ip-icon">📚</div><div><div class="ip-key">Mata Kuliah</div><div class="ip-val">${cid}</div></div></div>
-    <div class="info-pill"><div class="ip-icon">📅</div><div><div class="ip-key">Sesi</div><div class="ip-val">${sid}</div></div></div>`;
-
-  if (qrTimer) clearInterval(qrTimer);
-  const exp = new Date(expires_at).getTime();
-  const arc = $("timer-arc"), CIRC = 119.38;
-  function tick() {
-    const rem = Math.max(0, Math.floor((exp - Date.now()) / 1000));
-    const m = String(Math.floor(rem/60)).padStart(2,"0"), s = String(rem%60).padStart(2,"0");
-    const pct = rem / QR_TOTAL;
-    $("qr-timer").textContent = rem > 0 ? `${m}:${s}` : "Expired!";
-    $("qr-timer").className = "timer-countdown" + (rem <= 30 ? " danger" : "");
-    $("timer-pct").textContent = Math.round(pct*100) + "%";
-    arc.style.strokeDashoffset = CIRC * (1 - pct);
-    arc.style.stroke = rem <= 30 ? "#ef233c" : "url(#tg)";
-    $("qr-scan-line").style.display = rem > 0 ? "block" : "none";
-    if (!rem) clearInterval(qrTimer);
   }
-  tick();
-  qrTimer = setInterval(tick, 1000);
+  return sheet;
 }
 
-// ════════════════════════════════════════════
-//  HISTORY ALL (Dosen/Admin)
-// ════════════════════════════════════════════
-let recapLayer = null;
-
-async function loadHistoryAll() {
-  const sid = $("ha-ssel").value;
-  if (!sid) return showAlert("ha-ssel", "Pilih sesi terlebih dahulu.", "err");
-  const r = await api("presence/history/all", { session_id: sid });
-  if (!r.ok) return;
-  const d = r.data, items = d.items || [];
-  $("ha-n").textContent  = d.total_hadir;
-  $("ha-sesi").textContent = d.pertemuan || sid;
-  $("ha-tgl").textContent  = d.tanggal || "-";
-  $("ha-stats").style.display = "grid";
-
-  $("ha-tbody").innerHTML = items.length === 0
-    ? '<tr><td colspan="7" class="empty">Belum ada absen</td></tr>'
-    : items.map(p => `<tr>
-        <td>${p.no}</td>
-        <td><code>${p.nim||"-"}</code></td>
-        <td><strong>${p.nama}</strong></td>
-        <td style="font-size:.82rem">${fmtTime(p.jam_checkin)}</td>
-        <td>${p.maps_url ? `<a class="maps-link" href="${p.maps_url}" target="_blank">📍 Lihat</a>` : "<span style='color:var(--txt4)'>-</span>"}</td>
-        <td>${p.accel_verified ? `<span class="badge b-ok">✅ ${p.accel_samples||0} sampel</span>` : "<span style='color:var(--txt4)'>-</span>"}</td>
-        <td><span class="badge b-ok">${p.status}</span></td>
-      </tr>`).join("");
-
-  const wl = items.filter(p => p.lokasi && p.lokasi.lat);
-  if (wl.length > 0) {
-    $("recap-map-wrap").style.display = "block";
-    const map = initMap("recap-map");
-    if (recapLayer) map.removeLayer(recapLayer);
-    recapLayer = L.layerGroup().addTo(map);
-    const bounds = [];
-    wl.forEach(p => {
-      const { lat, lng } = p.lokasi;
-      bounds.push([lat, lng]);
-      L.marker([lat, lng], { icon: IC_IND }).bindPopup(`<div class="pop-title">${p.nama}</div>NIM: ${p.nim||"-"}<br>Jam: ${fmtTime(p.jam_checkin)}`).addTo(recapLayer);
-      if (p.lokasi.accuracy_m) L.circle([lat, lng], { radius:p.lokasi.accuracy_m, color:"#4361ee", weight:1, fillOpacity:.06 }).addTo(recapLayer);
-    });
-    if (bounds.length) try { map.fitBounds(bounds, { padding:[40,40], maxZoom:17 }); } catch(e) {}
-    setTimeout(() => map.invalidateSize(), 150);
-  } else {
-    $("recap-map-wrap").style.display = "none";
-  }
+function sendSuccess(data) {
+  return ContentService.createTextOutput(JSON.stringify({ ok: true, data: data }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
-// ════════════════════════════════════════════
-//  ACCELEROMETER GATE
-// ════════════════════════════════════════════
-function startAccelGate() {
-  if (gateVerified) return;
-  gateActive = true;
-  gateAccumMove = 0;
-  gateSamples = [];
-  gateLastX = null; gateLastY = null; gateLastZ = null;
-
-  $("btn-start-gate").style.display = "none";
-  $("btn-stop-gate").style.display  = "inline-flex";
-  $("accel-progress-wrap").style.display = "block";
-  $("agv-ring").className = "agv-ring shaking";
-  $("agv-label").textContent = "Gerakkan!";
-  updateGatePct(0);
-
-  let lastMoved = false;
-
-  function processMotion(ax, ay, az) {
-    if (!gateActive) return;
-    const vx = Math.abs(ax), vy = Math.abs(ay);
-    const vz = Math.abs(Math.abs(az) > 5 ? az - 9.81 : az);
-    const bx = $("agv-bx"), by = $("agv-by"), bz = $("agv-bz");
-    if (bx) bx.style.width = Math.min(180, vx * 20) + "px";
-    if (by) by.style.width = Math.min(180, vy * 20) + "px";
-    if (bz) bz.style.width = Math.min(180, vz * 20) + "px";
-
-    let mag;
-    if (Math.abs(az) > 5) {
-      const dx = gateLastX !== null ? ax - gateLastX : 0;
-      const dy = gateLastY !== null ? ay - gateLastY : 0;
-      const dz = gateLastZ !== null ? az - gateLastZ : 0;
-      mag = Math.sqrt(dx*dx + dy*dy + dz*dz);
-    } else {
-      mag = Math.sqrt(ax*ax + ay*ay + az*az);
-    }
-    gateLastX = ax; gateLastY = ay; gateLastZ = az;
-    lastMoved = (mag > 0.5);
-    gateSamples.push({ t:new Date().toISOString(), x:+ax.toFixed(3), y:+ay.toFixed(3), z:+az.toFixed(3) });
-  }
-
-  const progressTimer = setInterval(() => {
-    if (!gateActive) { clearInterval(progressTimer); return; }
-    if (lastMoved) { gateAccumMove += 0.1; lastMoved = false; }
-    const pct = Math.min(100, (gateAccumMove / GATE_NEEDED) * 100);
-    updateGatePct(pct);
-    if (gateAccumMove >= GATE_NEEDED) { clearInterval(progressTimer); onGateVerified(); }
-  }, 100);
-  window._gateProgressTimer = progressTimer;
-
-  if (!window.DeviceMotionEvent) {
-    showAlert("gate-alert", "📱 Sensor tidak tersedia — simulasi aktif di desktop", "info");
-    startGateSimulation(processMotion);
-    return;
-  }
-  if (typeof DeviceMotionEvent.requestPermission === "function") {
-    DeviceMotionEvent.requestPermission()
-      .then(state => {
-        if (state === "granted") {
-          attachMotionGate(processMotion);
-          showAlert("gate-alert", "✅ Sensor aktif — gerakkan HP Anda!", "info");
-        } else {
-          showAlert("gate-alert", "⚠️ Izin ditolak — pakai simulasi", "info");
-          startGateSimulation(processMotion);
-        }
-      })
-      .catch(err => { showAlert("gate-alert", "⚠️ " + err.message + " — pakai simulasi", "info"); startGateSimulation(processMotion); });
-  } else {
-    attachMotionGate(processMotion);
-    showAlert("gate-alert", "✅ Sensor aktif — gerakkan HP Anda!", "info");
-  }
+function sendError(error, code = 400) {
+  return ContentService.createTextOutput(JSON.stringify({ ok: false, error: error, code: code }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
-function attachMotionGate(cb) {
-  gateMotionHandler = e => {
-    const a = e.accelerationIncludingGravity || e.acceleration;
-    if (a) cb(a.x||0, a.y||0, a.z||9.81);
-  };
-  window.addEventListener("devicemotion", gateMotionHandler);
+function renderHtml(file, title) {
+  return HtmlService.createHtmlOutputFromFile(file)
+    .setTitle(title)
+    .addMetaTag("viewport", "width=device-width, initial-scale=1");
 }
 
-function stopAccelGate(verified = false) {
-  gateActive = false;
-  if (window._gateProgressTimer) { clearInterval(window._gateProgressTimer); window._gateProgressTimer = null; }
-  if (gateMotionHandler) { window.removeEventListener("devicemotion", gateMotionHandler); gateMotionHandler = null; }
-  if (gateTimer) { clearInterval(gateTimer); gateTimer = null; }
-  if (!verified) {
-    $("btn-start-gate").style.display = "inline-flex";
-    $("btn-stop-gate").style.display  = "none";
-    $("agv-ring").className = "agv-ring";
-    $("agv-label").textContent = "Tekan Mulai";
-    $("agv-icon").textContent  = "📱";
-    gateAccumMove = 0;
-    updateGatePct(0);
-  } else {
-    $("btn-start-gate").style.display = "none";
-    $("btn-stop-gate").style.display  = "none";
-  }
+function getAppUrl() { 
+  return ScriptApp.getService().getUrl(); 
 }
-
-function startGateSimulation(cb) {
-  let t = 0;
-  gateTimer = setInterval(() => {
-    if (!gateActive) { clearInterval(gateTimer); return; }
-    t += 0.1;
-    const x = Math.sin(t*2.1)*2.5 + (Math.random()-.5)*.8;
-    const y = Math.cos(t*1.8)*2.0 + (Math.random()-.5)*.8;
-    const z = 9.81 + Math.sin(t*3.3)*1.5 + (Math.random()-.5)*.5;
-    cb(x, y, z);
-  }, 80);
-}
-
-function updateGatePct(pct) {
-  const bar=$("accel-prog-bar"), pctEl=$("accel-pct"), msg=$("accel-prog-msg");
-  if (bar) bar.style.width = pct + "%";
-  if (pctEl) pctEl.textContent = Math.round(pct) + "%";
-  if (msg) msg.textContent = pct < 100
-    ? "Terus gerakkan… " + (GATE_NEEDED - (GATE_NEEDED*pct/100)).toFixed(1) + "s lagi"
-    : "Verifikasi selesai!";
-}
-
-function onGateVerified() {
-  gateVerified = true;
-  stopAccelGate(true);
-
-  if (gateSamples.length > 0) {
-    api("telemetry/accel/gate", {
-      device_id: "scan-gate-" + (S.user_id || "01"),
-      ts: new Date().toISOString(),
-      samples: gateSamples.slice(-20),
-      session_id: "",
-      duration_sec: GATE_NEEDED
-    });
-  }
-
-  const ring=$("agv-ring"), icon=$("agv-icon"), lbl=$("agv-label");
-  if (ring) ring.className = "agv-ring done";
-  if (icon) icon.textContent = "✅";
-  if (lbl)  lbl.textContent = "Terverifikasi!";
-
-  const badge = $("accel-gate-badge");
-  if (badge) { badge.textContent="✅ TERVERIFIKASI"; badge.style.cssText="font-family:var(--mono);font-size:.68rem;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(6,214,160,.1);color:var(--grn2);border:1px solid rgba(6,214,160,.25)"; }
-
-  const msg = $("accel-prog-msg");
-  if (msg) msg.textContent = "✅ Terverifikasi — " + gateSamples.length + " sampel tersimpan";
-  const progBar = $("accel-prog-bar");
-  if (progBar) progBar.style.background = "var(--gradg)";
-
-  const scanCard = $("scan-qr-card");
-  if (scanCard) { scanCard.style.opacity = "1"; scanCard.style.pointerEvents = "auto"; }
-  const lockDiv = $("accel-gate-lock");
-  if (lockDiv) lockDiv.style.display = "none";
-
-  const lockBadge = $("scan-lock-badge");
-  if (lockBadge) { lockBadge.textContent="✅ TERBUKA"; lockBadge.style.cssText="font-family:var(--mono);font-size:.68rem;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(6,214,160,.1);color:var(--grn2);border:1px solid rgba(6,214,160,.25)"; }
-
-  showAlert("gate-alert", "✅ Verifikasi gerak berhasil! Silakan scan QR di bawah.", "ok");
-}
-
-// ════════════════════════════════════════════
-//  SCAN QR
-// ════════════════════════════════════════════
-function openCheckinModal(qrData) {
-  pendingCheckin = qrData; pendingGps = null;
-  $("modal-state-gps").style.display = "block";
-  $("modal-state-ok").style.display  = "none";
-  $("modal-state-err").style.display = "none";
-  $("modal-qr-info").innerHTML = `
-    <div class="mdr"><span style="font-size:.9rem">🔑</span><span class="mdr-key">Token</span><span class="mdr-val">${qrData.qr_token}</span></div>
-    <div class="mdr"><span style="font-size:.9rem">📚</span><span class="mdr-key">Kelas</span><span class="mdr-val">${qrData.course_id}</span></div>
-    <div class="mdr"><span style="font-size:.9rem">📅</span><span class="mdr-key">Sesi</span><span class="mdr-val">${qrData.session_id}</span></div>`;
-
-  const dot = $("modal-gps-dot");
-  dot.className = "gps-spin";
-  $("modal-gps-txt").textContent = "Mengambil lokasi GPS otomatis…";
-  $("btn-modal-checkin").disabled = true;
-  $("modal-checkin").classList.add("open");
-
-  if (navigator.geolocation) {
-    gpsTimeoutId = setTimeout(() => {
-      dot.className = "gps-spin err";
-      $("modal-gps-txt").textContent = "GPS timeout — absen tanpa koordinat";
-      $("btn-modal-checkin").disabled = false;
-    }, 10000);
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        clearTimeout(gpsTimeoutId);
-        const { latitude:lat, longitude:lng, accuracy } = pos.coords;
-        pendingGps = { lat, lng, accuracy_m: accuracy };
-        dot.className = "gps-spin ok";
-        $("modal-gps-txt").textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${accuracy.toFixed(0)}m)`;
-        $("btn-modal-checkin").disabled = false;
-      },
-      () => { clearTimeout(gpsTimeoutId); dot.className="gps-spin err"; $("modal-gps-txt").textContent="GPS tidak tersedia"; $("btn-modal-checkin").disabled=false; },
-      { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
-    );
-  } else {
-    dot.className = "gps-spin err";
-    $("modal-gps-txt").textContent = "Geolocation tidak didukung";
-    $("btn-modal-checkin").disabled = false;
-  }
-}
-
-async function confirmCheckin() {
-  if (!pendingCheckin) return;
-  setSpin("cins", true); $("btn-modal-checkin").disabled = true;
-  const now = new Date().toISOString();
-  if (gateSamples.length > 0) {
-    api("telemetry/accel/gate", {
-      device_id: "scan-gate-" + (S.user_id||"01"),
-      ts: now,
-      samples: gateSamples.slice(-20),
-      session_id: pendingCheckin.session_id,
-      duration_sec: GATE_NEEDED
-    });
-  }
-  const payload = {
-    device_id: "web-scan-" + (S.user_id||"01"),
-    course_id: pendingCheckin.course_id,
-    session_id: pendingCheckin.session_id,
-    qr_token: pendingCheckin.qr_token,
-    ts: now,
-    accel_verified: gateVerified,
-    accel_samples: gateSamples.length
-  };
-  if (pendingGps) { payload.lat=pendingGps.lat; payload.lng=pendingGps.lng; payload.accuracy_m=pendingGps.accuracy_m; }
-
-  const r = await api("presence/checkin", payload);
-  setSpin("cins", false);
-  if (!r.ok) { $("modal-state-gps").style.display="none"; $("modal-state-err").style.display="block"; $("modal-err-txt").textContent=r.error; return; }
-
-  if (pendingGps && !r.data.gps_saved) {
-    api("telemetry/gps", { device_id:"web-scan-"+(S.user_id||"01"), ts:now, lat:pendingGps.lat, lng:pendingGps.lng, accuracy_m:pendingGps.accuracy_m, session_id:pendingCheckin.session_id });
-  }
-  $("modal-state-gps").style.display = "none";
-  $("modal-state-ok").style.display  = "block";
-  $("modal-ok-detail").textContent = `${r.data.course_id} · ${r.data.session_id}`;
-  $("modal-ok-id").textContent = "Presence ID: " + r.data.presence_id;
-  if (r.data.gps_saved && r.data.gps) { $("modal-ok-gps").style.display="flex"; $("modal-ok-gps-txt").textContent=`GPS: ${r.data.gps.lat.toFixed(5)}, ${r.data.gps.lng.toFixed(5)}`; }
-  if (r.data.accel_verified) { $("modal-ok-accel").style.display="flex"; $("modal-ok-accel-txt").textContent=`Gerakan terverifikasi (${r.data.accel_samples} sampel)`; }
-  gateVerified = false; gateSamples = [];
-  setTimeout(closeModal, 4000);
-}
-
-function closeModal() {
-  $("modal-checkin").classList.remove("open");
-  clearTimeout(gpsTimeoutId);
-  pendingCheckin = null; pendingGps = null;
-}
-
-function startScan() {
-  if (!gateVerified) { showAlert("cin-alert","⚠️ Selesaikan verifikasi gerak di Langkah 1 terlebih dahulu!","err"); return; }
-  $("btn-cam").style.display  = "none";
-  $("btn-stop").style.display = "inline-flex";
-  scanner = new Html5Qrcode("qr-reader");
-  scanner.start(
-    { facingMode:"environment" },
-    { fps:10, qrbox:{width:250,height:250} },
-    text => {
-      stopScan();
-      let qrData = null;
-      try { const p=JSON.parse(text); if(p.qr_token&&p.course_id&&p.session_id) qrData=p; } catch(e) {}
-      if (qrData) { openCheckinModal(qrData); }
-      else { showAlert("cin-alert","QR tidak valid. Gunakan QR dari sistem ini.","err"); $("btn-cam").style.display="inline-flex"; }
-    },
-    () => {}
-  ).catch(e => showAlert("cin-alert","Kamera error: "+e));
-}
-
-function stopScan() {
-  if (scanner) { try { scanner.stop().then(() => scanner.clear()); } catch(e) {} scanner=null; }
-  $("btn-cam").style.display  = "inline-flex";
-  $("btn-stop").style.display = "none";
-}
-
-// ════════════════════════════════════════════
-//  MANUAL
-// ════════════════════════════════════════════
-let manLat=null, manLng=null, manMapVis=false, manMark=null;
-
-function getMyLocationManual() {
-  if (!navigator.geolocation) return;
-  $("loc-status-m").textContent = "Mendeteksi GPS…";
-  navigator.geolocation.getCurrentPosition(
-    pos => { manLat=pos.coords.latitude; manLng=pos.coords.longitude; $("loc-status-m").textContent=`📍 ${manLat.toFixed(5)}, ${manLng.toFixed(5)} (±${pos.coords.accuracy.toFixed(0)}m)`; if(manMapVis) updateManMark(manLat,manLng); },
-    () => $("loc-status-m").textContent = "Gagal mendapat lokasi."
-  );
-}
-
-function toggleManualMap() {
-  const w = $("manual-map-wrap");
-  manMapVis = !manMapVis;
-  w.style.display = manMapVis ? "block" : "none";
-  if (manMapVis) setTimeout(() => {
-    const map = initMap("manual-map", DEF_C, 14);
-    map.on("click", e => {
-      manLat=e.latlng.lat; manLng=e.latlng.lng;
-      $("loc-status-m").textContent=`📍 ${manLat.toFixed(5)}, ${manLng.toFixed(5)}`;
-      updateManMark(manLat,manLng);
-      $("manual-map-info").textContent=`Dipilih: ${manLat.toFixed(5)}, ${manLng.toFixed(5)}`;
-    });
-    if (manLat&&manLng) { updateManMark(manLat,manLng); MAPS["manual-map"].setView([manLat,manLng],16); }
-  }, 80);
-}
-
-function updateManMark(lat, lng) {
-  const map = MAPS["manual-map"];
-  if (!map) return;
-  if (manMark) map.removeLayer(manMark);
-  manMark = L.marker([lat,lng],{icon:IC_PUR}).bindPopup(`<div class="pop-title">Lokasi Dipilih</div>${lat.toFixed(5)}, ${lng.toFixed(5)}`).addTo(map).openPopup();
-  map.setView([lat,lng],17);
-}
-
-async function doCheckinManual() {
-  const qt=_v("mt").toUpperCase(), cid=_v("mc"), sid=_v("ms");
-  if (!qt||!cid||!sid) return showAlert("man-alert","Isi semua field.");
-  const payload = { device_id:"web-manual-"+(S.user_id||"01"), course_id:cid, session_id:sid, qr_token:qt, ts:new Date().toISOString() };
-  if (manLat&&manLng) { payload.lat=manLat; payload.lng=manLng; }
-  setSpin("mans",true);
-  const r = await api("presence/checkin", payload);
-  setSpin("mans",false);
-  if (!r.ok) return showAlert("man-alert", r.error);
-  showAlert("man-alert", `✅ Absen berhasil! ID: ${r.data.presence_id}`, "ok");
-  $("mt").value = "";
-  manLat=null; manLng=null;
-  $("loc-status-m").textContent = "";
-  $("manual-map-wrap").style.display = "none";
-  manMapVis = false;
-}
-
-// ════════════════════════════════════════════
-//  HISTORY MHS
-// ════════════════════════════════════════════
-let mhsLayer = null;
-
-async function loadHistoryMhs() {
-  const cid = _v("mh-csel") || $("mh-csel").value;
-  if (!cid) return showAlert("mh-tbody", "Pilih mata kuliah.", "err");
-  const r = await api("presence/history", { course_id: cid });
-  if (!r.ok) { $("mh-tbody").innerHTML=`<tr><td colspan="6" class="empty">${r.error}</td></tr>`; return; }
-  const items = r.data.items || [];
-  $("mh-total").textContent = items.length;
-  $("mh-tbody").innerHTML = items.length === 0
-    ? '<tr><td colspan="6" class="empty">Belum ada data</td></tr>'
-    : items.map(p => `<tr>
-        <td>${p.no}</td>
-        <td><strong>${p.pertemuan}</strong></td>
-        <td style="color:var(--txt2)">${p.tanggal||"-"}</td>
-        <td style="font-size:.82rem">${fmtTime(p.jam_checkin)}</td>
-        <td>${p.maps_url ? `<a class="maps-link" href="${p.maps_url}" target="_blank">📍 ${p.lokasi.lat.toFixed(4)},${p.lokasi.lng.toFixed(4)}</a>` : "<span style='color:var(--txt4)'>-</span>"}</td>
-        <td><span class="badge b-ok">${p.status}</span></td>
-      </tr>`).join("");
-
-  const wl = items.filter(p => p.lokasi && p.lokasi.lat);
-  if (wl.length > 0) {
-    $("mhs-map-wrap").style.display = "block";
-    const map = initMap("mhs-map");
-    if (mhsLayer) map.removeLayer(mhsLayer);
-    mhsLayer = L.layerGroup().addTo(map);
-    const bounds = [];
-    wl.forEach((p,i) => {
-      const {lat,lng} = p.lokasi;
-      bounds.push([lat,lng]);
-      const icon = i===0 ? IC_GRN : i===wl.length-1 ? IC_RED : IC_IND;
-      L.marker([lat,lng],{icon}).bindPopup(`<div class="pop-title">${p.pertemuan}</div>${p.tanggal}<br>${fmtTime(p.jam_checkin)}`).addTo(mhsLayer);
-    });
-    if (bounds.length > 1) L.polyline(bounds,{color:"#4361ee",weight:2.5,dashArray:"5 7",opacity:.6}).addTo(mhsLayer);
-    try { map.fitBounds(bounds,{padding:[40,40],maxZoom:17}); } catch(e){}
-    setTimeout(() => map.invalidateSize(), 150);
-  } else {
-    $("mhs-map-wrap").style.display = "none";
-  }
-}
-
-// ════════════════════════════════════════════
-//  ACCELEROMETER PANEL — FIX: full working
-// ════════════════════════════════════════════
-let accelMotionHandler = null;
-let accelSimTimer = null;
-let accelCanvasCtx = null;
-
-function startAccel() {
-  if (accelActive) return;
-  accelActive = true;
-  accelBatch  = [];
-  $("btn-ac-start").style.display = "none";
-  $("btn-ac-stop").style.display  = "inline-flex";
-
-  const badge = $("ac-live-badge");
-  if (badge) { badge.className="live-badge lb-on"; badge.innerHTML='<span class="lb-dot"></span>LIVE'; }
-
-  // Init canvas
-  const canvas = $("accel-canvas");
-  if (canvas) {
-    canvas.width  = canvas.offsetWidth || 600;
-    canvas.height = 120;
-    accelCanvasCtx = canvas.getContext("2d");
-  }
-
-  function onData(ax, ay, az) {
-    if (!accelActive) return;
-    const mag = Math.sqrt(ax*ax + ay*ay + az*az);
-    $("av-x").textContent = ax.toFixed(3);
-    $("av-y").textContent = ay.toFixed(3);
-    $("av-z").textContent = az.toFixed(3);
-    $("av-mag").textContent = mag.toFixed(3);
-
-    // Push history
-    accelHistory.x.push(ax); accelHistory.y.push(ay);
-    accelHistory.z.push(az); accelHistory.mag.push(mag);
-    if (accelHistory.x.length > ACCEL_MAX_PTS) {
-      accelHistory.x.shift(); accelHistory.y.shift();
-      accelHistory.z.shift(); accelHistory.mag.shift();
-    }
-
-    // Batch for server
-    accelBatch.push({ t:new Date().toISOString(), x:+ax.toFixed(3), y:+ay.toFixed(3), z:+az.toFixed(3) });
-
-    drawAccelChart();
-  }
-
-  // Send batch every 5 sec
-  accelTimer = setInterval(() => {
-    if (!accelActive || accelBatch.length === 0) return;
-    const batch = accelBatch.splice(0);
-    api("telemetry/accel", {
-      device_id: _v("ac-dev") || "web-browser-01",
-      ts: new Date().toISOString(),
-      samples: batch
-    });
-  }, 5000);
-
-  if (!window.DeviceMotionEvent) {
-    $("ac-src").textContent = "simulasi";
-    showAlert("ac-alert", "📱 Sensor tidak tersedia di browser/PC ini — mode simulasi aktif", "info");
-    startAccelSim(onData);
-    return;
-  }
-  if (typeof DeviceMotionEvent.requestPermission === "function") {
-    DeviceMotionEvent.requestPermission()
-      .then(state => {
-        if (state === "granted") {
-          attachAccelSensor(onData);
-        } else {
-          $("ac-src").textContent = "simulasi";
-          showAlert("ac-alert", "⚠️ Izin sensor ditolak — mode simulasi", "info");
-          startAccelSim(onData);
-        }
-      })
-      .catch(() => { $("ac-src").textContent = "simulasi"; startAccelSim(onData); });
-  } else {
-    attachAccelSensor(onData);
-  }
-}
-
-function attachAccelSensor(cb) {
-  $("ac-src").textContent = "sensor HP";
-  accelMotionHandler = e => {
-    const a = e.acceleration || e.accelerationIncludingGravity;
-    if (a) cb(a.x||0, a.y||0, a.z||9.81);
-  };
-  window.addEventListener("devicemotion", accelMotionHandler);
-  showAlert("ac-alert", "✅ Sensor accelerometer HP aktif!", "ok");
-}
-
-function startAccelSim(cb) {
-  let t = 0;
-  accelSimTimer = setInterval(() => {
-    if (!accelActive) { clearInterval(accelSimTimer); return; }
-    t += 0.05;
-    const x = Math.sin(t*1.7)*1.2 + (Math.random()-.5)*.3;
-    const y = Math.cos(t*2.3)*0.9 + (Math.random()-.5)*.3;
-    const z = 9.81 + Math.sin(t*3.1)*.4 + (Math.random()-.5)*.2;
-    cb(x, y, z);
-  }, 100);
-}
-
-function stopAccel() {
-  accelActive = false;
-  if (accelMotionHandler) { window.removeEventListener("devicemotion", accelMotionHandler); accelMotionHandler=null; }
-  if (accelSimTimer) { clearInterval(accelSimTimer); accelSimTimer=null; }
-  if (accelTimer) { clearInterval(accelTimer); accelTimer=null; }
-  $("btn-ac-start").style.display = "inline-flex";
-  $("btn-ac-stop").style.display  = "none";
-  const badge = $("ac-live-badge");
-  if (badge) { badge.className="live-badge lb-off"; badge.innerHTML='<span class="lb-dot"></span>OFF'; }
-}
-
-function drawAccelChart() {
-  const ctx = accelCanvasCtx;
-  const canvas = $("accel-canvas");
-  if (!ctx || !canvas) return;
-
-  const W = canvas.offsetWidth || 600;
-  if (canvas.width !== W) canvas.width = W;
-  const H = 120;
-
-  ctx.clearRect(0, 0, W, H);
-
-  // Background
-  ctx.fillStyle = "#f0f4ff";
-  ctx.fillRect(0, 0, W, H);
-
-  // Grid lines
-  ctx.strokeStyle = "#dde3f5";
-  ctx.lineWidth = 0.5;
-  for (let y = 0; y <= H; y += H/4) {
-    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
-  }
-
-  const data = accelHistory;
-  const n = data.x.length;
-  if (n < 2) return;
-
-  function drawLine(arr, color, minV, maxV) {
-    const range = maxV - minV || 1;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    for (let i = 0; i < arr.length; i++) {
-      const px = (i / (ACCEL_MAX_PTS-1)) * W;
-      const py = H - ((arr[i] - minV) / range) * (H - 10) - 5;
-      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-  }
-
-  // Find min/max across all axes for scale
-  const allVals = [...data.x, ...data.y, ...data.z];
-  const minV = Math.min(...allVals) - 0.5;
-  const maxV = Math.max(...allVals) + 0.5;
-
-  drawLine(data.x, "#4361ee", minV, maxV);
-  drawLine(data.y, "#06d6a0", minV, maxV);
-  drawLine(data.z, "#f4a261", minV, maxV);
-  drawLine(data.mag, "#ef233c", 0, maxV);
-
-  // Legend
-  const colors = ["#4361ee","#06d6a0","#f4a261","#ef233c"];
-  const labels = ["X","Y","Z","Mag"];
-  colors.forEach((c,i) => {
-    ctx.fillStyle = c;
-    ctx.fillRect(6 + i*38, 4, 12, 8);
-    ctx.fillStyle = "#4a5578";
-    ctx.font = "bold 9px monospace";
-    ctx.fillText(labels[i], 20+i*38, 12);
-  });
-}
-
-async function fetchAccelLatest() {
-  const dev = _v("ac-q-dev");
-  if (!dev) return;
-  const r = await api("telemetry/accel/latest", { device_id: dev });
-  const el = $("accel-latest");
-  if (!r.ok) { el.textContent = "Error: " + r.error; return; }
-  const d = r.data;
-  el.innerHTML = `<strong>${d.device_id}</strong> [${d.source||"realtime"}]<br>🕒 ${fmtDt(d.t)}<br>X: <strong style="color:#4361ee">${Number(d.x).toFixed(3)}</strong> &nbsp; Y: <strong style="color:#06d6a0">${Number(d.y).toFixed(3)}</strong> &nbsp; Z: <strong style="color:#f4a261">${Number(d.z).toFixed(3)}</strong> m/s²`;
-}
-
-// ════════════════════════════════════════════
-//  GPS PANEL
-// ════════════════════════════════════════════
-let gpsMarker=null, gpsCircle=null, gpsPts=[], gpsPoly=null, histLayer=null;
-
-function initGpsPanel() {
-  setTimeout(() => { initMap("gps-map", DEF_C, 15).invalidateSize(); }, 120);
-}
-
-function setTrackDot(a) {
-  $("track-dot").className = "track-dot" + (a ? " active" : "");
-  $("btn-gps-start").style.display = a ? "none" : "inline-flex";
-  $("btn-gps-stop").style.display  = a ? "inline-flex" : "none";
-}
-
-function startGPS() {
-  if (!navigator.geolocation) return showAlert("gps-alert","Geolocation tidak didukung.");
-  setTrackDot(true);
-  gpsPts = [];
-  $("gps-status-txt").textContent = "Aktif…";
-  $("gps-map-bar").style.display  = "none";
-  const map = MAPS["gps-map"] || initMap("gps-map");
-
-  gpsWatcher = navigator.geolocation.watchPosition(
-    pos => {
-      const { latitude:lat, longitude:lng, accuracy } = pos.coords;
-      const now = new Date();
-      $("gps-status-txt").textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-
-      const ab = $("gps-acc-badge");
-      ab.style.display = "inline";
-      ab.textContent = `±${accuracy.toFixed(0)}m`;
-      const isGood=accuracy<20, isMed=accuracy<60;
-      ab.style.cssText=`display:inline;font-family:var(--mono);font-size:.7rem;padding:3px 9px;border-radius:20px;background:${isGood?"rgba(6,214,160,.12)":isMed?"rgba(244,162,97,.12)":"rgba(239,35,60,.1)"};color:${isGood?"var(--grn2)":isMed?"#c05621":"var(--red)"};border:1px solid ${isGood?"rgba(6,214,160,.3)":isMed?"rgba(244,162,97,.3)":"rgba(239,35,60,.2)"}`;
-
-      $("gps-map-bar").style.display = "flex";
-      $("gps-coords").textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-      $("gps-time").textContent   = fmtDt(now);
-      $("gps-gmaps").href = `https://maps.google.com/?q=${lat},${lng}`;
-
-      if (!gpsMarker) gpsMarker = L.marker([lat,lng],{icon:IC_PUR}).bindPopup('<div class="pop-title">Posisi Anda</div>').addTo(map);
-      else gpsMarker.setLatLng([lat,lng]);
-      gpsMarker.getPopup().setContent(`<div class="pop-title">Posisi Saat Ini</div>${lat.toFixed(5)}, ${lng.toFixed(5)}<br>±${accuracy.toFixed(0)}m`);
-
-      if (gpsCircle) map.removeLayer(gpsCircle);
-      gpsCircle = L.circle([lat,lng],{radius:accuracy,color:"#7b2d8b",weight:1.5,fillOpacity:.07}).addTo(map);
-
-      gpsPts.push([lat,lng]);
-      if (gpsPoly) map.removeLayer(gpsPoly);
-      if (gpsPts.length > 1) gpsPoly = L.polyline(gpsPts,{color:"#4361ee",weight:4,opacity:.8,lineCap:"round"}).addTo(map);
-      map.panTo([lat,lng],{animate:true,duration:.5});
-
-      api("telemetry/gps", {
-        device_id: _v("gps-dev") || "web-01",
-        ts: now.toISOString(), lat, lng, accuracy_m: accuracy
-      });
-    },
-    err => { showAlert("gps-alert","GPS error: "+err.message); setTrackDot(false); },
-    { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
-  );
-}
-
-function stopGPS() {
-  if (gpsWatcher !== null) { navigator.geolocation.clearWatch(gpsWatcher); gpsWatcher=null; }
-  setTrackDot(false);
-  $("gps-status-txt").textContent = "Tidak aktif";
-  $("gps-acc-badge").style.display = "none";
-}
-
-async function fetchGpsHistory() {
-  const dev = _v("gps-q-dev");
-  if (!dev) return;
-  const r = await api("telemetry/gps/history", { device_id:dev, limit:200 });
-  if (!r.ok) return showAlert("gps-alert", r.error);
-  const items = r.data.items || [];
-
-  $("gps-hist-tbody").innerHTML = items.length === 0
-    ? '<tr><td colspan="6" class="empty">Tidak ada data</td></tr>'
-    : items.map((g,i) => `<tr>
-        <td>${i+1}</td>
-        <td style="font-size:.8rem">${fmtDt(g.ts)}</td>
-        <td style="font-family:var(--mono)">${g.lat.toFixed(5)}</td>
-        <td style="font-family:var(--mono)">${g.lng.toFixed(5)}</td>
-        <td>${g.accuracy_m?`±${g.accuracy_m.toFixed(0)}m`:"-"}</td>
-        <td><a class="maps-link" href="https://maps.google.com/?q=${g.lat},${g.lng}" target="_blank">🗺️</a></td>
-      </tr>`).join("");
-
-  if (items.length === 0) { $("history-map-wrap").style.display="none"; return; }
-  $("history-map-wrap").style.display = "block";
-  setTimeout(() => {
-    const map = initMap("gps-history-map");
-    if (histLayer) map.removeLayer(histLayer);
-    histLayer = L.layerGroup().addTo(map);
-    const coords = items.map(g => [g.lat, g.lng]);
-    if (coords.length > 1) L.polyline(coords,{color:"#4361ee",weight:4,opacity:.85,lineCap:"round"}).addTo(histLayer);
-    L.marker(coords[0],{icon:IC_GRN}).bindPopup(`<div class="pop-title">🟢 Titik Awal</div>${fmtDt(items[0].ts)}`).addTo(histLayer);
-    if (coords.length > 1) L.marker(coords[coords.length-1],{icon:IC_RED}).bindPopup(`<div class="pop-title">🔴 Terbaru</div>${fmtDt(items[items.length-1].ts)}`).addTo(histLayer);
-    coords.slice(1,-1).forEach((coord,i) => L.marker(coord,{icon:mkDot("#4361ee")}).bindPopup(`<div class="pop-title">Titik ${i+2}</div>${fmtDt(items[i+1].ts)}`).addTo(histLayer));
-    try { map.fitBounds(coords,{padding:[40,40],maxZoom:17}); } catch(e) {}
-    map.invalidateSize();
-  }, 120);
-}
-
-// ════════════════════════════════════════════
-//  MAP INIT
-// ════════════════════════════════════════════
-function initMap(id, c=DEF_C, z=15) {
-  if (MAPS[id]) { MAPS[id].invalidateSize(); return MAPS[id]; }
-  const m = L.map(id).setView(c, z);
-  L.tileLayer(TILE, { attribution:ATTR, maxZoom:19 }).addTo(m);
-  MAPS[id] = m;
-  return m;
-}
-</script>
-</body>
-</html>

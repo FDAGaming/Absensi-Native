@@ -1,197 +1,57 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Praktik Komputasi Awan</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        body { font-family: system-ui, -apple-system, sans-serif; background: #f4f4f9; padding: 20px; max-width: 900px; margin: auto; }
-        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h2 { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
-        .input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; }
-        input, button { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        button { background: #007bff; color: white; border: none; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #0056b3; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
-        pre { background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
-        #map { height: 300px; width: 100%; border-radius: 8px; margin-top: 15px; z-index: 1;}
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Presensi</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; color: #334155; }
+    .card { background: #ffffff; border-radius: 24px; padding: 3rem 2.5rem; max-width: 800px; width: 100%; text-align: center; box-shadow: 0 20px 40px rgba(30, 64, 175, 0.1); border: 1px solid rgba(255, 255, 255, 0.8); }
+    .card h1 { font-size: 2.2rem; font-weight: 800; margin-bottom: 0.5rem; color: #1e3a8a; }
+    .subtitle { font-size: 1rem; color: #64748b; margin-bottom: 2.5rem; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
+    .menu-btn { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 20px; padding: 2rem 1.5rem; cursor: pointer; transition: all 0.3s; display: flex; flex-direction: column; align-items: center; text-decoration: none; color: inherit; }
+    .menu-btn:hover { background: #ffffff; border-color: #3b82f6; transform: translateY(-5px); box-shadow: 0 15px 30px rgba(59, 130, 246, 0.15); }
+    .menu-icon { font-size: 3rem; margin-bottom: 1rem; background: #eff6ff; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #3b82f6; }
+    .menu-btn h3 { font-size: 1.25rem; color: #1e3a8a; margin-bottom: 0.5rem; }
+    .menu-btn p { font-size: 0.85rem; color: #64748b; line-height: 1.4; }
+    #loading-text { margin-top: 1.5rem; font-size: 0.9rem; color: #f59e0b; font-weight: 500; display: none; }
+  </style>
 </head>
 <body>
 
-    <h1>Client Uji Coba API v1</h1>
+  <div class="card">
+    <h1>Portal Presensi</h1>
+    <p class="subtitle">Silakan pilih portal masuk sesuai dengan peran Anda</p>
 
-    <div class="card grid-3">
-        <div class="input-group">
-            <label>Device ID</label>
-            <input type="text" id="deviceId" value="dev-001">
-        </div>
-        <div class="input-group">
-            <label>User ID</label>
-            <input type="text" id="userId" value="2023xxxx">
-        </div>
-        <div class="input-group">
-            <label>Course ID & Session ID</label>
-            <div style="display: flex; gap:10px;">
-                <input type="text" id="courseId" value="cloud-101" style="width:50%">
-                <input type="text" id="sessionId" value="sesi-02" style="width:50%">
-            </div>
-        </div>
+    <div class="menu-grid">
+      <a href="admin.html" class="menu-btn" onclick="showLoading()">
+        <div class="menu-icon">👨‍🏫</div>
+        <h3>Dosen / Admin</h3>
+        <p>Generate QR Code, kelola sesi kelas, dan pantau kehadiran.</p>
+      </a>
+
+      <a href="client.html" class="menu-btn" onclick="showLoading()">
+        <div class="menu-icon">📱</div>
+        <h3>Mahasiswa</h3>
+        <p>Scan QR Code dan catat kehadiran Anda untuk sesi ini.</p>
+      </a>
+
+      <a href="accelerometer.html" class="menu-btn" onclick="showLoading()">
+        <div class="menu-icon">📳</div>
+        <h3>Accelerometer</h3>
+        <p>Uji coba dan kirim data sensor pergerakan secara real-time.</p>
+      </a>
     </div>
 
-    <div class="card">
-        <h2>Modul 1: Presensi QR Dinamis</h2>
-        <p>Token QR Aktif: <strong id="activeToken">-</strong></p>
-        <div style="display: flex; gap: 10px;">
-            <button onclick="generateQr()">1. Generate QR Token</button>
-            <button onclick="checkIn()">2. Check-in</button>
-            <button onclick="checkStatus()">3. Cek Status</button>
-        </div>
-        <pre id="resPresence">Response akan muncul di sini...</pre>
-    </div>
+    <div id="loading-text">Sedang mengalihkan halaman...</div>
+  </div>
 
-    <div class="card">
-        <h2>Modul 2: Accelerometer</h2>
-        <div style="display: flex; gap: 10px;">
-            <button onclick="sendAccelBatch()">Kirim Batch Simulasi</button>
-            <button onclick="getAccelLatest()">Ambil Data Latest</button>
-        </div>
-        <pre id="resAccel">Response akan muncul di sini...</pre>
-    </div>
-
-    <div class="card">
-        <h2>Modul 3: GPS + Peta</h2>
-        <div style="display: flex; gap: 10px;">
-            <button onclick="logGps()">Log GPS Saat Ini</button>
-            <button onclick="loadMapData()">Render Peta (Latest + History)</button>
-        </div>
-        <pre id="resGps">Response akan muncul di sini...</pre>
-        <div id="map"></div>
-    </div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // Setup Map Leaflet
-        let map = L.map('map').setView([-7.2575, 112.7521], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        let marker, polyline;
-
-        // Base URL GAS Hardcoded
-        const BASE_URL = "https://script.google.com/macros/s/AKfycbxuysLRvocSCJoVfuhEArfWFD6jBGszerzAZCmOPxsqe1B8AumF8jopTyoEjQR_D3-j/exec";
-
-        // Utility: Ambil nilai input
-        const getVal = (id) => document.getElementById(id).value;
-        const getTs = () => new Date().toISOString();
-        
-        // Utility: Fetch Helper
-        async function apiCall(path, method, bodyObj = null) {
-            const url = BASE_URL + path;
-            const options = {
-                method: method,
-                headers: { 'Content-Type': 'application/json' }
-            };
-            if (bodyObj && method === 'POST') options.body = JSON.stringify(bodyObj);
-            
-            try {
-                const response = await fetch(url, options);
-                return await response.json();
-            } catch (error) {
-                return { error: error.message, note: "Pastikan URL GAS benar dan men-support CORS" };
-            }
-        }
-
-        // ================= Modul 1 =================
-        let currentToken = "";
-        
-        async function generateQr() {
-            const payload = { course_id: getVal('courseId'), session_id: getVal('sessionId'), ts: getTs() };
-            const res = await apiCall('/presence/qr/generate', 'POST', payload);
-            if(res.data && res.data.qr_token) {
-                currentToken = res.data.qr_token;
-                document.getElementById('activeToken').innerText = currentToken;
-            }
-            document.getElementById('resPresence').innerText = JSON.stringify(res, null, 2);
-        }
-
-        async function checkIn() {
-            if(!currentToken) return alert("Generate Token dulu!");
-            const payload = {
-                user_id: getVal('userId'), device_id: getVal('deviceId'),
-                course_id: getVal('courseId'), session_id: getVal('sessionId'),
-                qr_token: currentToken, ts: getTs()
-            };
-            const res = await apiCall('/presence/checkin', 'POST', payload);
-            document.getElementById('resPresence').innerText = JSON.stringify(res, null, 2);
-        }
-
-        async function checkStatus() {
-            const params = `?user_id=${getVal('userId')}&course_id=${getVal('courseId')}&session_id=${getVal('sessionId')}`;
-            const res = await apiCall('/presence/status' + params, 'GET');
-            document.getElementById('resPresence').innerText = JSON.stringify(res, null, 2);
-        }
-
-        // ================= Modul 2 =================
-        async function sendAccelBatch() {
-            const payload = {
-                device_id: getVal('deviceId'), ts: getTs(),
-                samples: [
-                    { t: getTs(), x: Math.random(), y: Math.random(), z: 9.8 },
-                    { t: getTs(), x: Math.random(), y: Math.random(), z: 9.7 }
-                ]
-            };
-            const res = await apiCall('/telemetry/accel', 'POST', payload);
-            document.getElementById('resAccel').innerText = JSON.stringify(res, null, 2);
-        }
-
-        async function getAccelLatest() {
-            const res = await apiCall(`/telemetry/accel/latest?device_id=${getVal('deviceId')}`, 'GET');
-            document.getElementById('resAccel').innerText = JSON.stringify(res, null, 2);
-        }
-
-        // ================= Modul 3 =================
-        function logGps() {
-            if (!navigator.geolocation) {
-                alert("Browser kamu tidak mendukung Geolocation");
-                return;
-            }
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const payload = {
-                    device_id: getVal('deviceId'), ts: getTs(),
-                    lat: position.coords.latitude, lng: position.coords.longitude,
-                    accuracy_m: position.coords.accuracy
-                };
-                const res = await apiCall('/telemetry/gps', 'POST', payload);
-                document.getElementById('resGps').innerText = JSON.stringify(res, null, 2);
-            }, (err) => {
-                alert("Gagal ambil lokasi GPS: " + err.message);
-            });
-        }
-
-        async function loadMapData() {
-            const deviceId = getVal('deviceId');
-            
-            // Fetch Latest (Marker)
-            const resLatest = await apiCall(`/telemetry/gps/latest?device_id=${deviceId}`, 'GET');
-            // Fetch History (Polyline)
-            const resHistory = await apiCall(`/telemetry/gps/history?device_id=${deviceId}&limit=50`, 'GET');
-            
-            document.getElementById('resGps').innerText = "Data Latest:\n" + JSON.stringify(resLatest, null, 2) + "\n\nData History:\n" + JSON.stringify(resHistory, null, 2);
-
-            // Render Map
-            if(resLatest.ok && resLatest.data) {
-                const latLng = [resLatest.data.lat, resLatest.data.lng];
-                if(marker) map.removeLayer(marker);
-                marker = L.marker(latLng).addTo(map).bindPopup("Lokasi Terakhir").openPopup();
-                map.setView(latLng, 15);
-            }
-
-            if(resHistory.ok && resHistory.data && resHistory.data.items) {
-                const points = resHistory.data.items.map(item => [item.lat, item.lng]);
-                if(polyline) map.removeLayer(polyline);
-                polyline = L.polyline(points, {color: 'red'}).addTo(map);
-            }
-        }
-    </script>
+  <script>
+    function showLoading() {
+      document.getElementById('loading-text').style.display = 'block';
+    }
+  </script>
 </body>
 </html>

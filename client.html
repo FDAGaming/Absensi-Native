@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presensi Mahasiswa</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body{ font-family: Arial; text-align:center; background:#f1f5f9; padding:30px; }
+    .card{ background:white; padding:25px; border-radius:16px; max-width:400px; margin:auto; box-shadow:0 10px 25px rgba(0,0,0,0.1); }
+    input{ width:100%; padding:12px; margin:10px 0; border-radius:8px; border:1px solid #ccc; }
+    button{ width:100%; padding:12px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin-bottom: 10px;}
+    .btn-back { background: #94a3b8; }
+    #reader{ margin-top:20px; }
+    .status{ margin-top:15px; font-weight:bold; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Scan QR Presensi</h2>
+  <input id="nim" placeholder="Masukkan NIM">
+  <input id="courseId" placeholder="Course ID (ex: WEB-101)" value="WEB-101">
+  <input id="sessionId" placeholder="Session ID (ex: SESI-01)" value="SESI-01">
+  <button onclick="startScanner()">Scan QR</button>
+  <button class="btn-back" onclick="window.location.href='index.html'">Kembali</button>
+  <div id="reader"></div>
+  <div id="status" class="status"></div>
+</div>
+
+<script>
+  // Wajib Ganti dengan Link Web App milikmu
+  const BASE_URL = "https://script.google.com/macros/s/AKfycbysO3ewmeBUyD_IchWUe5_mcZOd1oQ1j5pCDjzuo96P9pj1hnmQQlTtMdy4eZvj4N_DyQ/exec";
+
+  let deviceId = localStorage.getItem("device_id");
+  if(!deviceId){
+    deviceId = "DEV-" + Math.random().toString(36).substring(2,10);
+    localStorage.setItem("device_id",deviceId);
+  }
+
+  function startScanner(){
+    const nim = document.getElementById("nim").value;
+    if(!nim) return alert("Masukkan NIM terlebih dahulu");
+
+    document.getElementById("status").innerText="Mengaktifkan kamera...";
+    const html5QrCode = new Html5Qrcode("reader");
+
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps:10, qrbox:250 },
+      (qrCodeMessage) => {
+        html5QrCode.stop();
+        checkin(qrCodeMessage,nim);
+      }
+    );
+  }
+
+  function checkin(token,nim){
+    document.getElementById("status").innerText="Mengirim presensi...";
+
+    const payload = {
+      user_id: nim,
+      nim: nim,
+      device_id: deviceId,
+      course_id: document.getElementById('courseId').value,
+      session_id: document.getElementById('sessionId').value,
+      qr_token: token,
+      ts: new Date().toISOString()
+    };
+
+    // Gunakan text/plain untuk bypass CORS GAS saat testing di local VS Code
+    fetch(BASE_URL + "?path=presence/checkin", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      redirect: "follow"
+    })
+    .then(res=>res.json())
+    .then(res=>{
+      if(res.ok) document.getElementById("status").innerHTML="✅ Presensi berhasil";
+      else document.getElementById("status").innerHTML="❌ "+res.error;
+    })
+    .catch(err => document.getElementById("status").innerHTML="❌ Error koneksi");
+  }
+</script>
+
+</body>
+</html>
