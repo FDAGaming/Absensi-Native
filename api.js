@@ -1,7 +1,7 @@
 // api.js
 
 // Ganti dengan Deployment ID dari backend GAS Anda
-const BASE_URL = "https://script.google.com/macros/s/AKfycbzSJupz-MFlNvlqIFxvvwtAHG0jZvISacnMU6a8YPBOJNkW2d6NB1PNIW-Ja9j1borpJA/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbwBgwcJGxzzeRMwFWnoQvGWmDtM2lAbCRPf4bGGtnivDpALCWOg2SsTqHinpVa43adx/exec";
 
 /**
  * Fungsi pembungkus terpusat untuk memanggil API GAS
