@@ -6,57 +6,88 @@
   <title>Presensi Mahasiswa</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
-    body{ font-family: Arial; text-align:center; background:#f1f5f9; padding:30px; }
-    .card{ background:white; padding:25px; border-radius:16px; max-width:400px; margin:auto; box-shadow:0 10px 25px rgba(0,0,0,0.1); }
-    input{ width:100%; padding:12px; margin:10px 0; border-radius:8px; border:1px solid #ccc; }
-    button{ width:100%; padding:12px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin-bottom: 10px;}
-    .btn-back { background: #94a3b8; }
-    #reader{ margin-top:20px; }
-    .status{ margin-top:15px; font-weight:bold; }
+    /* Desain UI Diperhalus */
+    body{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align:center; background:#f0f4f8; padding:30px; color: #334155;}
+    .card{ background:white; padding:30px 25px; border-radius:20px; max-width:400px; margin:auto; box-shadow:0 20px 40px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; }
+    h2 { margin-bottom: 5px; color: #1e3a8a; }
+    p.subtitle { font-size: 0.85rem; color: #64748b; margin-bottom: 20px; }
+    input[type="text"] { width:100%; padding:14px; margin:10px 0; border-radius:12px; border:1px solid #cbd5e1; font-size: 1rem; text-align: center; font-weight: 600; outline: none; transition: border-color 0.2s; box-sizing: border-box;}
+    input[type="text"]:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    button{ width:100%; padding:14px; background:linear-gradient(135deg, #3b82f6, #2563eb); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:bold; font-size: 1rem; margin-bottom: 10px; transition: transform 0.2s, box-shadow 0.2s;}
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+    .btn-back { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; box-shadow: none;}
+    .btn-back:hover { background: #e2e8f0; color: #1e293b; box-shadow: none; transform: none;}
+    #reader{ margin-top:20px; border-radius: 12px; overflow: hidden; }
+    .status{ margin-top:15px; font-size: 0.9rem; font-weight:600; min-height: 20px;}
+    .device-badge { font-family: monospace; font-size: 0.75rem; background: #e2e8f0; color: #475569; padding: 4px 8px; border-radius: 8px; display: inline-block; margin-bottom: 15px; }
   </style>
 </head>
 <body>
 
 <div class="card">
-  <h2>Scan QR Presensi</h2>
-  <input id="nim" placeholder="Masukkan NIM">
-  <input id="courseId" placeholder="Course ID (ex: WEB-101)" value="WEB-101">
-  <input id="sessionId" placeholder="Session ID (ex: SESI-01)" value="SESI-01">
-  <button onclick="startScanner()">Scan QR</button>
+  <h2>📲 Presensi QR</h2>
+  <p class="subtitle">Scan QR Code dari layar Dosen</p>
+  
+  <div class="device-badge" id="device-display">Device ID: ...</div>
+
+  <input type="text" id="nim" placeholder="Masukkan NIM Anda" autocomplete="off">
+  
+  <input type="hidden" id="courseId" value="WEB-101">
+  <input type="hidden" id="sessionId" value="SESI-01">
+  
+  <button id="btn-scan" onclick="startScanner()">Buka Kamera & Scan QR</button>
   <button class="btn-back" onclick="window.location.href='index.html'">Kembali</button>
+  
   <div id="reader"></div>
   <div id="status" class="status"></div>
 </div>
 
 <script>
-  // Wajib Ganti dengan Link Web App milikmu
-  const BASE_URL = "https://script.google.com/macros/s/AKfycbysO3ewmeBUyD_IchWUe5_mcZOd1oQ1j5pCDjzuo96P9pj1hnmQQlTtMdy4eZvj4N_DyQ/exec";
+  // Menggunakan Script persis seperti yang Anda minta
+  const BASE_URL = "https://script.google.com/macros/s/AKfycbxJormXSihwT-iFqMqpvb7kJrrGfB8fq__x9TTAf4QrTnEmuR0sJulHoWaMrlGk-h5P/exec";
 
   let deviceId = localStorage.getItem("device_id");
   if(!deviceId){
-    deviceId = "DEV-" + Math.random().toString(36).substring(2,10);
-    localStorage.setItem("device_id",deviceId);
+    deviceId = "DEV-" + Math.random().toString(36).substring(2,10).toUpperCase();
+    localStorage.setItem("device_id", deviceId);
   }
+  document.getElementById("device-display").innerText = "Device ID: " + deviceId;
+
+  let html5QrCode;
 
   function startScanner(){
     const nim = document.getElementById("nim").value;
     if(!nim) return alert("Masukkan NIM terlebih dahulu");
 
     document.getElementById("status").innerText="Mengaktifkan kamera...";
-    const html5QrCode = new Html5Qrcode("reader");
+    document.getElementById("status").style.color = "#f59e0b";
+    
+    if(html5QrCode) {
+        html5QrCode.stop().catch(err => console.log(err));
+    }
+
+    html5QrCode = new Html5Qrcode("reader");
 
     html5QrCode.start(
       { facingMode: "environment" },
       { fps:10, qrbox:250 },
       (qrCodeMessage) => {
         html5QrCode.stop();
+        document.getElementById("reader").innerHTML = ""; // Bersihkan UI Kamera
         checkin(qrCodeMessage,nim);
+      },
+      (err) => {
+        // Abaikan error saat mencari frame QR
       }
-    );
+    ).catch(err => {
+        document.getElementById("status").innerText = "Gagal buka kamera: " + err;
+        document.getElementById("status").style.color = "#ef4444";
+    });
   }
 
   function checkin(token,nim){
     document.getElementById("status").innerText="Mengirim presensi...";
+    document.getElementById("status").style.color = "#2563eb";
 
     const payload = {
       user_id: nim,
@@ -77,10 +108,19 @@
     })
     .then(res=>res.json())
     .then(res=>{
-      if(res.ok) document.getElementById("status").innerHTML="✅ Presensi berhasil";
-      else document.getElementById("status").innerHTML="❌ "+res.error;
+      if(res.ok) {
+          document.getElementById("status").innerHTML="✅ Presensi berhasil";
+          document.getElementById("status").style.color="#10b981";
+      }
+      else {
+          document.getElementById("status").innerHTML="❌ "+res.error;
+          document.getElementById("status").style.color="#ef4444";
+      }
     })
-    .catch(err => document.getElementById("status").innerHTML="❌ Error koneksi");
+    .catch(err => {
+        document.getElementById("status").innerHTML="❌ Error koneksi: " + err.message;
+        document.getElementById("status").style.color="#ef4444";
+    });
   }
 </script>
 
